@@ -1,24 +1,23 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
+  Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
-
 import { ExperienceService } from './experience.service';
-
-import { CreateExperienceDto } from './dto/create-experience.dto';
-import { UpdateExperienceDto } from './dto/update-experience.dto';
-
-import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
+import { SseService }        from '../sse/sse.service';
+import { JwtAuthGuard }      from '../auth/jwt/jwt-auth.guard';
 
 @Controller('experience')
 export class ExperienceController {
-  constructor(private readonly experienceService: ExperienceService) {}
+  constructor(
+    private readonly experienceService: ExperienceService,
+    private readonly sseService: SseService,
+  ) {}
 
   @Get()
   findAll() {
@@ -32,22 +31,28 @@ export class ExperienceController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() dto: CreateExperienceDto) {
-    return this.experienceService.create(dto);
+  async create(@Body() body: Record<string, unknown>) {
+    const result = await this.experienceService.create(body);
+    this.sseService.emit('experience', 'created');
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
-    @Body() dto: UpdateExperienceDto,
+    @Body() body: Record<string, unknown>,
   ) {
-    return this.experienceService.update(id, dto);
+    const result = await this.experienceService.update(id, body);
+    this.sseService.emit('experience', 'updated');
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.experienceService.remove(id);
+  async remove(@Param('id') id: string) {
+    const result = await this.experienceService.remove(id);
+    this.sseService.emit('experience', 'deleted');
+    return result;
   }
 }
