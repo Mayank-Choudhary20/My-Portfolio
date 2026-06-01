@@ -59,6 +59,7 @@ model Resume {
   id        String   @id @default(cuid())
   title     String
   fileUrl   String
+  thumbnailUrl String?  // ← add this line
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
