@@ -6,20 +6,18 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
-
 import { ProfileService } from './profile.service';
-
-import { CreateProfileDto } from './dto/create-profile.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-
-import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
+import { SseService }     from '../sse/sse.service';
+import { JwtAuthGuard }   from '../auth/jwt/jwt-auth.guard';
 
 @Controller('profile')
 export class ProfileController {
   constructor(
     private readonly profileService: ProfileService,
+    private readonly sseService: SseService,
   ) {}
 
   @Get()
@@ -29,26 +27,36 @@ export class ProfileController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(
-    @Body() dto: CreateProfileDto,
-  ) {
-    return this.profileService.create(dto);
+  async create(@Body() body: Record<string, unknown>) {
+    const result = await this.profileService.create(body as never);
+    this.sseService.emit('profile', 'created');
+    return result;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put()
+  async updateByPut(@Body() body: Record<string, unknown>) {
+    const result = await this.profileService.updateByBody(body);
+    this.sseService.emit('profile', 'updated');
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
-    @Body() dto: UpdateProfileDto,
+    @Body() body: Record<string, unknown>,
   ) {
-    return this.profileService.update(id, dto);
+    const result = await this.profileService.update(id, body as never);
+    this.sseService.emit('profile', 'updated');
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(
-    @Param('id') id: string,
-  ) {
-    return this.profileService.remove(id);
+  async remove(@Param('id') id: string) {
+    const result = await this.profileService.remove(id);
+    this.sseService.emit('profile', 'deleted');
+    return result;
   }
 }
