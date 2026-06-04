@@ -1,9 +1,9 @@
 import {
-  IsBoolean,
-  IsEmail,
-  IsInt,
-  IsOptional,
   IsString,
+  IsEmail,
+  IsNumber,
+  IsBoolean,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateProfileDto {
@@ -18,6 +18,10 @@ export class CreateProfileDto {
 
   @IsString()
   about: string;
+
+  @IsOptional()
+  @IsString()
+  mission?: string;
 
   @IsEmail()
   email: string;
@@ -57,9 +61,10 @@ export class CreateProfileDto {
   @IsString()
   instagram?: string;
 
-  @IsInt()
+  @IsNumber()
   yearsExperience: number;
 
+  @IsOptional()
   @IsBoolean()
-  available: boolean;
+  available?: boolean;
 }
