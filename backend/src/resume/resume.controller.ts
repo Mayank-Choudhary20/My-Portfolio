@@ -1,48 +1,62 @@
 import {
+  Body,
   Controller,
   Get,
   Post,
- Patch,
+  Put,
+  Patch,
   Delete,
- Param,
- Body,
- UseGuards,
+  Param,
+  UseGuards,
 } from '@nestjs/common';
-
 import { ResumeService } from './resume.service';
-
-import { CreateResumeDto } from './dto/create-resume.dto';
-import { UpdateResumeDto } from './dto/update-resume.dto';
-
-import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
+import { SseService }    from '../sse/sse.service';
+import { JwtAuthGuard }  from '../auth/jwt/jwt-auth.guard';
 
 @Controller('resume')
 export class ResumeController {
-  constructor(private readonly resumeService: ResumeService) {}
+  constructor(
+    private readonly resumeService: ResumeService,
+    private readonly sseService: SseService,
+  ) {}
 
   @Get()
-  getLatest() {
-    return this.resumeService.findLatest();
+  getResume() {
+    return this.resumeService.getResume();
   }
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() dto: CreateResumeDto) {
-    return this.resumeService.create(dto);
+  async create(@Body() body: { title: string; fileUrl: string; thumbnailUrl?: string | null }) {
+    const result = await this.resumeService.create(body);
+    this.sseService.emit('resume', 'created');
+    return result;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put()
+  async updateByPut(@Body() body: { title?: string; fileUrl?: string; thumbnailUrl?: string | null }) {
+    const result = await this.resumeService.updateByBody(body);
+    this.sseService.emit('resume', 'updated');
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
-    @Body() dto: UpdateResumeDto,
+    @Body() body: { title?: string; fileUrl?: string; thumbnailUrl?: string | null },
   ) {
-    return this.resumeService.update(id, dto);
+    const result = await this.resumeService.update(id, body);
+    this.sseService.emit('resume', 'updated');
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.resumeService.remove(id);
+  async remove(@Param('id') id: string) {
+    const result = await this.resumeService.remove(id);
+    this.sseService.emit('resume', 'deleted');
+    return result;
   }
 }
