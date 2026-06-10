@@ -1,71 +1,114 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-
-import { CreateSettingsDto } from './dto/create-settings.dto';
-import { UpdateSettingsDto } from './dto/update-settings.dto';
-
 
 @Injectable()
 export class SettingsService {
+  constructor(private prisma: PrismaService) {}
 
-  constructor(
-    private prisma: PrismaService,
-  ) {}
-
-
-  create(dto: CreateSettingsDto) {
-
-    return this.prisma.setting.create({
-      data: dto,
-    });
-
-  }
-
-
-  find() {
-
-    return this.prisma.setting.findFirst();
-
-  }
-
-
-  async update(
-    id: string,
-    dto: UpdateSettingsDto,
-  ) {
-
-
-    const setting =
-      await this.prisma.setting.findUnique({
-        where:{
-          id,
+  async getSettings() {
+    const settings = await this.prisma.setting.findFirst();
+    if (!settings) {
+      return this.prisma.setting.create({
+        data: {
+          portfolioName:     'My Portfolio',
+          heroTitle:         'Full Stack Developer',
+          heroSubtitle:      'Building amazing things',
+          heroGreeting:      "Hello, I'm",
+          heroAvailableText: 'Available for Opportunities',
+          heroBusyText:      'Currently Occupied',
+          heroTypingTexts:   JSON.stringify([
+            'AI / ML Engineer',
+            'Full Stack Developer',
+            'System Architect',
+            'Open Source Builder',
+            'Problem Solver',
+          ]),
         },
       });
-
-
-    if(!setting){
-
-      throw new NotFoundException(
-        'Settings not found'
-      );
-
     }
-
-
-    return this.prisma.setting.update({
-
-      where:{
-        id,
-      },
-
-      data:dto,
-
-    });
-
+    return settings;
   }
 
+  async updateSettings(data: Record<string, unknown>) {
+    const settings = await this.prisma.setting.findFirst();
+
+    const {
+      id: _id,
+      createdAt: _ca,
+      updatedAt: _ua,
+      ...rest
+    } = data;
+
+    const updateData: Record<string, unknown> = {};
+
+    const allowedFields = [
+      'portfolioName',
+      'heroTitle',
+      'heroSubtitle',
+      'heroGreeting',
+      'heroAvailableText',
+      'heroBusyText',
+      'heroTypingTexts',
+      'githubUrl',
+      'linkedinUrl',
+      'twitterUrl',
+      'instagramUrl',
+      'youtubeUrl',
+      'leetcodeUrl',
+      'codechefUrl',
+      'email',
+      'phone',
+      'location',
+      'resumeUrl',
+      'seoTitle',
+      'seoDescription',
+      'primaryColor',
+    ];
+
+    allowedFields.forEach((field) => {
+      if (rest[field] !== undefined) {
+        updateData[field] = rest[field] === '' ? null : rest[field];
+      }
+    });
+
+    if (!settings) {
+      return this.prisma.setting.create({
+        data: {
+          portfolioName:     String(updateData.portfolioName || 'My Portfolio'),
+          heroTitle:         String(updateData.heroTitle || 'Developer'),
+          heroSubtitle:      String(updateData.heroSubtitle || ''),
+          heroGreeting:      String(updateData.heroGreeting || "Hello, I'm"),
+          heroAvailableText: String(updateData.heroAvailableText || 'Available for Opportunities'),
+          heroBusyText:      String(updateData.heroBusyText || 'Currently Occupied'),
+          ...updateData,
+        } as never,
+      });
+    }
+
+    return this.prisma.setting.update({
+      where: { id: settings.id },
+      data:  updateData as never,
+    });
+  }
+
+  async createSettings(data: Record<string, unknown>) {
+    const {
+      id: _id,
+      createdAt: _ca,
+      updatedAt: _ua,
+      ...rest
+    } = data;
+
+    return this.prisma.setting.create({
+      data: {
+        portfolioName:     String(rest.portfolioName || 'My Portfolio'),
+        heroTitle:         String(rest.heroTitle || 'Developer'),
+        heroSubtitle:      String(rest.heroSubtitle || ''),
+        heroGreeting:      String(rest.heroGreeting || "Hello, I'm"),
+        heroAvailableText: String(rest.heroAvailableText || 'Available for Opportunities'),
+        heroBusyText:      String(rest.heroBusyText || 'Currently Occupied'),
+        ...rest,
+      } as never,
+    });
+  }
 }
