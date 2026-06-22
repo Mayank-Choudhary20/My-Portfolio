@@ -109,13 +109,9 @@ function extractUsername(url: string, prefix: string): string {
   try {
     const u = new URL(url.startsWith("http") ? url : `https://${url}`);
     const path = u.pathname.replace(/^\/+|\/+$/g, "");
-    // For linkedin /in/username
     if (path.startsWith("in/")) return path.replace("in/", "");
-    // For /u/username (leetcode)
     if (path.startsWith("u/")) return path.replace("u/", "");
-    // For /users/username
     if (path.startsWith("users/")) return path.replace("users/", "");
-    // For /profile/username
     if (path.startsWith("profile/")) return path.replace("profile/", "");
     return path || url;
   } catch {
@@ -137,6 +133,10 @@ function ProfileCard({
   const username = extractUsername(url, platform.prefix);
   const Icon = platform.icon;
 
+  const handleCardClick = () => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <motion.div
       ref={ref}
@@ -147,9 +147,11 @@ function ProfileCard({
         delay: index * 0.07,
         ease: [0.23, 1, 0.32, 1],
       }}
-      className="group relative"
+      // ↓ group is on the outer wrapper so ALL children react to card hover
+      className="group relative cursor-pointer"
+      onClick={handleCardClick}
     >
-      {/* Glow backdrop */}
+      {/* Glow backdrop — triggers on group (card) hover */}
       <div
         className="absolute -inset-0.5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"
         style={{
@@ -171,28 +173,62 @@ function ProfileCard({
         }}
         transition={{ duration: 0.3 }}
       >
-        {/* Icon */}
+        {/* Top row: icon + external-link corner button */}
         <div className="flex items-start justify-between">
+          {/*
+           * Icon box:
+           * - scale + rotate animate when the GROUP (card) is hovered,
+           *   not just when this element itself is hovered.
+           * We use the CSS group-hover variant via a wrapper div +
+           * a Framer Motion variant driven by the group state.
+           *
+           * Simplest approach: keep whileHover on the icon box but
+           * point the trigger at the card via CSS group-hover on a
+           * sibling wrapper that forwards the animation.
+           *
+           * Because Framer's `whileHover` only fires on the element
+           * itself, we instead use `variants` + `whileHover` on the
+           * CARD (motion.div above) and propagate down.
+           *
+           * Cleanest solution: use `animate` driven by a `useState`
+           * that tracks card hover via onHoverStart / onHoverEnd.
+           */}
           <motion.div
-            className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${platform.gradient} flex items-center justify-center shadow-lg`}
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            transition={{ duration: 0.2 }}
-            style={{
-              boxShadow: `0 8px 25px ${platform.glow}`,
-            }}
+            className={`
+              w-14 h-14 rounded-2xl bg-gradient-to-br ${platform.gradient}
+              flex items-center justify-center shadow-lg
+              /* CSS fallback tilt on card hover */
+              transition-transform duration-200
+              group-hover:scale-110 group-hover:rotate-[5deg]
+            `}
+            style={{ boxShadow: `0 8px 25px ${platform.glow}` }}
           >
             <Icon size={26} className="text-white" />
           </motion.div>
 
-          <div
-            className="w-6 h-6 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          {/*
+           * Corner external-link icon — also clickable independently.
+           * e.stopPropagation() so it doesn't double-fire the card click.
+           */}
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open ${platform.label} profile`}
+            onClick={(e) => e.stopPropagation()}
+            className="
+              w-7 h-7 rounded-lg flex items-center justify-center
+              opacity-0 group-hover:opacity-100
+              transition-all duration-200
+              hover:scale-110
+            "
             style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.15)",
             }}
           >
-            <ExternalLink size={11} className="text-slate-400" />
-          </div>
+            <ExternalLink size={13} className="text-slate-300" />
+          </a>
         </div>
 
         {/* Info */}
@@ -211,16 +247,17 @@ function ProfileCard({
               color: "#94a3b8",
             }}
           >
-            <Code2 size={9} className="text-slate-600" />@{username}
+            <Code2 size={9} className="text-slate-600" />
+            @{username}
           </div>
         </div>
 
-        {/* Button */}
+        {/* "Open Profile" button — stopPropagation so it doesn't double-open */}
         <a
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all"
+          className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-125"
           style={{
             background: `linear-gradient(135deg, ${platform.glow.replace("0.3", "0.15")}, ${platform.glow.replace("0.3", "0.08")})`,
             border: `1px solid ${platform.border.replace("0.4", "0.2")}`,
