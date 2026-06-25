@@ -11,8 +11,12 @@ import {
   SiMysql, SiRust, SiGo, SiFlutter, SiDart, SiFirebase,
   SiSupabase, SiVercel, SiNetlify, SiNginx, SiLinux as SiLinuxIcon,
 } from "react-icons/si";
-import { FaAws, FaBrain, FaJava, FaPhp, FaSwift, FaDatabase, FaServer } from "react-icons/fa";
-import { Layers, Server, Database, Cloud, Code2, Cpu, Sparkles, Box, Star, Clock } from "lucide-react";
+import {
+  FaAws, FaBrain, FaJava, FaPhp, FaSwift, FaDatabase, FaServer,
+} from "react-icons/fa";
+import {
+  Layers, Server, Database, Cloud, Code2, Cpu, Sparkles, Box, Star, Clock,
+} from "lucide-react";
 import SectionTitle from "@/components/ui/SectionTitle";
 import type { Skill } from "@/types/portfolio";
 
@@ -20,6 +24,9 @@ interface SkillsProps {
   skills: Skill[];
 }
 
+// ---------------------------------------------------------------------------
+// Icon registry
+// ---------------------------------------------------------------------------
 const ICON_REGISTRY: Array<[string[], React.ElementType]> = [
   [["react", "reactjs", "react.js"], SiReact],
   [["nextjs", "next.js", "next", "nextdotjs"], SiNextdotjs],
@@ -58,18 +65,27 @@ const ICON_REGISTRY: Array<[string[], React.ElementType]> = [
   [["netlify"], SiNetlify],
   [["nginx"], SiNginx],
   [["linux", "ubuntu", "debian"], SiLinuxIcon],
-  [["openai", "chatgpt", "gpt", "llm", "langchain", "rag", "ai", "ml", "machine learning", "huggingface"], FaBrain],
+  [
+    ["openai", "chatgpt", "gpt", "llm", "langchain", "rag", "ai", "ml",
+      "machine learning", "huggingface"],
+    FaBrain,
+  ],
   [["database", "db", "sql"], FaDatabase],
   [["server", "backend", "api"], FaServer],
 ];
 
 function resolveIcon(skillName: string): React.ElementType {
   const normalized = skillName.toLowerCase().trim().replace(/[\s\-_.]/g, "");
-  const original = skillName.toLowerCase().trim();
+  const original   = skillName.toLowerCase().trim();
   for (const [keys, Icon] of ICON_REGISTRY) {
     for (const key of keys) {
       const keyNorm = key.replace(/[\s\-_.]/g, "");
-      if (normalized === keyNorm || original === key || normalized.includes(keyNorm) || keyNorm.includes(normalized)) {
+      if (
+        normalized === keyNorm ||
+        original   === key     ||
+        normalized.includes(keyNorm) ||
+        keyNorm.includes(normalized)
+      ) {
         return Icon;
       }
     }
@@ -77,48 +93,181 @@ function resolveIcon(skillName: string): React.ElementType {
   return Code2;
 }
 
-const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ElementType; gradient: string; glow: string; border: string }> = {
-  Frontend:    { label: "Frontend",    icon: Layers,   gradient: "from-blue-500 to-cyan-400",    glow: "rgba(59,130,246,0.25)",   border: "rgba(59,130,246,0.3)" },
-  Backend:     { label: "Backend",     icon: Server,   gradient: "from-emerald-500 to-teal-400", glow: "rgba(16,185,129,0.25)",   border: "rgba(16,185,129,0.3)" },
-  Database:    { label: "Database",    icon: Database, gradient: "from-orange-500 to-amber-400", glow: "rgba(249,115,22,0.25)",   border: "rgba(249,115,22,0.3)" },
-  Cloud:       { label: "Cloud",       icon: Cloud,    gradient: "from-sky-500 to-blue-400",      glow: "rgba(14,165,233,0.25)",   border: "rgba(14,165,233,0.3)" },
-  AI:          { label: "AI / ML",     icon: Cpu,      gradient: "from-purple-500 to-pink-400",  glow: "rgba(168,85,247,0.25)",   border: "rgba(168,85,247,0.3)" },
-  DevOps:      { label: "DevOps",      icon: Box,      gradient: "from-red-500 to-orange-400",   glow: "rgba(239,68,68,0.25)",    border: "rgba(239,68,68,0.3)" },
-  Programming: { label: "Programming", icon: Code2,    gradient: "from-violet-500 to-purple-400",glow: "rgba(139,92,246,0.25)",   border: "rgba(139,92,246,0.3)" },
-  Other:       { label: "Other",       icon: Sparkles, gradient: "from-slate-500 to-slate-400",  glow: "rgba(148,163,184,0.2)",   border: "rgba(148,163,184,0.2)" },
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function isImageUrl(str: string | null | undefined): str is string {
+  if (!str || typeof str !== "string") return false;
+  const t = str.trim();
+  return t.startsWith("http://") || t.startsWith("https://");
+}
+
+// Cloudinary URLs work natively — no proxy needed
+function isCloudinaryUrl(url: string): boolean {
+  return url.includes("cloudinary.com") || url.includes("res.cloudinary");
+}
+
+// Build the proxy URL for external icons that have CORS issues
+function toProxiedUrl(url: string): string {
+  if (isCloudinaryUrl(url)) return url; // Cloudinary works directly
+  return `/api/icon-proxy?url=${encodeURIComponent(url)}`;
+}
+
+// ---------------------------------------------------------------------------
+// SkillIcon — proxies external SVGs through Next.js API to bypass CORS
+// ---------------------------------------------------------------------------
+function SkillIcon({ skill, size = 22 }: { skill: Skill; size?: number }) {
+  const [imgError, setImgError]   = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  const hasCustomIcon = isImageUrl(skill.icon) && !imgError;
+
+  if (hasCustomIcon) {
+    const rawUrl    = skill.icon as string;
+    const proxiedUrl = toProxiedUrl(rawUrl);
+
+    return (
+      <div
+        style={{
+          position:   "relative",
+          width:      size,
+          height:     size,
+          flexShrink: 0,
+        }}
+      >
+        {/* Fallback icon shown while loading */}
+        {!imgLoaded && (
+          <div
+            style={{
+              position:       "absolute",
+              inset:          0,
+              display:        "flex",
+              alignItems:     "center",
+              justifyContent: "center",
+            }}
+          >
+            {(() => {
+              const FallbackIcon = resolveIcon(skill.name);
+              return (
+                <FallbackIcon
+                  size={size}
+                  style={{ color: "rgba(255,255,255,0.25)" }}
+                />
+              );
+            })()}
+          </div>
+        )}
+
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={proxiedUrl}
+          alt={skill.name}
+          width={size}
+          height={size}
+          onLoad={() => setImgLoaded(true)}
+          onError={() => {
+            // If proxied URL fails, fall back to registry icon
+            setImgError(true);
+            setImgLoaded(false);
+          }}
+          style={{
+            width:      size,
+            height:     size,
+            objectFit:  "contain",
+            opacity:    imgLoaded ? 1 : 0,
+            transition: "opacity 0.25s ease",
+            display:    "block",
+            flexShrink: 0,
+          }}
+        />
+      </div>
+    );
+  }
+
+  // No custom icon or load failed — use registry
+  const Icon = resolveIcon(skill.name);
+  return <Icon size={size} className="text-white drop-shadow" />;
+}
+
+// ---------------------------------------------------------------------------
+// Category config
+// ---------------------------------------------------------------------------
+const CATEGORY_CONFIG: Record<
+  string,
+  { label: string; icon: React.ElementType; gradient: string; glow: string; border: string }
+> = {
+  Frontend:    { label: "Frontend",    icon: Layers,   gradient: "from-blue-500 to-cyan-400",     glow: "rgba(59,130,246,0.25)",  border: "rgba(59,130,246,0.3)"  },
+  Backend:     { label: "Backend",     icon: Server,   gradient: "from-emerald-500 to-teal-400",  glow: "rgba(16,185,129,0.25)",  border: "rgba(16,185,129,0.3)"  },
+  Database:    { label: "Database",    icon: Database, gradient: "from-orange-500 to-amber-400",  glow: "rgba(249,115,22,0.25)",  border: "rgba(249,115,22,0.3)"  },
+  Cloud:       { label: "Cloud",       icon: Cloud,    gradient: "from-sky-500 to-blue-400",      glow: "rgba(14,165,233,0.25)",  border: "rgba(14,165,233,0.3)"  },
+  AI:          { label: "AI / ML",     icon: Cpu,      gradient: "from-purple-500 to-pink-400",   glow: "rgba(168,85,247,0.25)",  border: "rgba(168,85,247,0.3)"  },
+  DevOps:      { label: "DevOps",      icon: Box,      gradient: "from-red-500 to-orange-400",    glow: "rgba(239,68,68,0.25)",   border: "rgba(239,68,68,0.3)"   },
+  Programming: { label: "Programming", icon: Code2,    gradient: "from-violet-500 to-purple-400", glow: "rgba(139,92,246,0.25)",  border: "rgba(139,92,246,0.3)"  },
+  Other:       { label: "Other",       icon: Sparkles, gradient: "from-slate-500 to-slate-400",   glow: "rgba(148,163,184,0.2)",  border: "rgba(148,163,184,0.2)" },
 };
 
-const getCategory = (cat: string) => CATEGORY_CONFIG[cat] ?? CATEGORY_CONFIG.Other;
+const getCategory = (cat: string) =>
+  CATEGORY_CONFIG[cat] ?? CATEGORY_CONFIG.Other;
 
-const LEVEL_DATA: Record<string, { percent: number; label: string; color: string }> = {
-  BEGINNER:     { percent: 25, label: "Beginner",     color: "from-slate-400 to-slate-500" },
-  INTERMEDIATE: { percent: 55, label: "Intermediate", color: "from-blue-400 to-cyan-400"   },
-  ADVANCED:     { percent: 80, label: "Advanced",     color: "from-cyan-400 to-blue-500"   },
-  EXPERT:       { percent: 95, label: "Expert",       color: "from-cyan-400 to-purple-500" },
-  beginner:     { percent: 25, label: "Beginner",     color: "from-slate-400 to-slate-500" },
-  intermediate: { percent: 55, label: "Intermediate", color: "from-blue-400 to-cyan-400"   },
-  advanced:     { percent: 80, label: "Advanced",     color: "from-cyan-400 to-blue-500"   },
-  expert:       { percent: 95, label: "Expert",       color: "from-cyan-400 to-purple-500" },
+// ---------------------------------------------------------------------------
+// Level fallback table
+// ---------------------------------------------------------------------------
+const LEVEL_FALLBACK: Record<string, { percent: number; label: string; color: string }> = {
+  BEGINNER:     { percent: 25, label: "Beginner",     color: "from-slate-400 to-slate-500"  },
+  INTERMEDIATE: { percent: 55, label: "Intermediate", color: "from-blue-400 to-cyan-400"    },
+  ADVANCED:     { percent: 80, label: "Advanced",     color: "from-cyan-400 to-blue-500"    },
+  EXPERT:       { percent: 95, label: "Expert",       color: "from-cyan-400 to-purple-500"  },
 };
 
-const getLevel = (level: string) => LEVEL_DATA[level] ?? { percent: 50, label: level, color: "from-blue-400 to-cyan-400" };
+function resolveLevel(skill: Skill): { percent: number; label: string; color: string } {
+  const levelKey = skill.level?.toUpperCase?.() ?? "";
+  const fallback = LEVEL_FALLBACK[levelKey] ?? {
+    percent: 50,
+    label:   skill.level ?? "N/A",
+    color:   "from-blue-400 to-cyan-400",
+  };
 
+  const backendPercent =
+    skill.percentage != null && skill.percentage >= 0 && skill.percentage <= 100
+      ? skill.percentage
+      : null;
+
+  const backendProficiency =
+    typeof skill.proficiency === "string" && skill.proficiency.trim() !== ""
+      ? skill.proficiency.trim()
+      : null;
+
+  const percent = backendPercent ?? fallback.percent;
+  const label   = backendProficiency ?? fallback.label;
+
+  let color: string;
+  if      (percent >= 85) color = "from-cyan-400 to-purple-500";
+  else if (percent >= 65) color = "from-cyan-400 to-blue-500";
+  else if (percent >= 40) color = "from-blue-400 to-cyan-400";
+  else                    color = "from-slate-400 to-slate-500";
+
+  return { percent, label, color };
+}
+
+// ---------------------------------------------------------------------------
+// SkillCard
+// ---------------------------------------------------------------------------
 function SkillCard({ skill, index }: { skill: Skill; index: number }) {
   const [hovered, setHovered] = useState(false);
-  const [tiltX, setTiltX] = useState(0);
-  const [tiltY, setTiltY] = useState(0);
+  const [tiltX, setTiltX]     = useState(0);
+  const [tiltY, setTiltY]     = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
-  const inView = useInView(cardRef, { once: true, margin: "-30px" });
+  const inView  = useInView(cardRef, { once: true, margin: "-30px" });
 
-  const Icon = resolveIcon(skill.name);
-  const cat = getCategory(skill.category);
-  const lvl = getLevel(skill.level);
+  const cat           = getCategory(skill.category);
+  const lvl           = resolveLevel(skill);
+  const hasCustomIcon = isImageUrl(skill.icon);
 
   const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
     const r = cardRef.current.getBoundingClientRect();
-    setTiltX(((e.clientY - r.top) / r.height - 0.5) * -12);
-    setTiltY(((e.clientX - r.left) / r.width - 0.5) * 12);
+    setTiltX(((e.clientY - r.top)  / r.height - 0.5) * -12);
+    setTiltY(((e.clientX - r.left) / r.width  - 0.5) *  12);
   };
 
   return (
@@ -147,45 +296,65 @@ function SkillCard({ skill, index }: { skill: Skill; index: number }) {
       <div
         className="relative rounded-2xl p-5 flex flex-col gap-3 h-full"
         style={{
-          background: hovered ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)",
-          border: hovered ? `1px solid ${cat.border}` : "1px solid rgba(255,255,255,0.06)",
+          background:     hovered ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)",
+          border:         hovered ? `1px solid ${cat.border}` : "1px solid rgba(255,255,255,0.06)",
           backdropFilter: "blur(20px)",
-          transition: "background 0.3s, border 0.3s",
+          transition:     "background 0.3s, border 0.3s",
         }}
       >
         {/* Top row */}
         <div className="flex items-start justify-between">
           <motion.div
-            className={`w-12 h-12 rounded-xl bg-gradient-to-br ${cat.gradient} flex items-center justify-center shadow-lg flex-shrink-0`}
             animate={hovered ? { scale: 1.15, rotate: 5 } : { scale: 1, rotate: 0 }}
             transition={{ duration: 0.2 }}
-            style={{ boxShadow: hovered ? `0 8px 25px ${cat.glow}` : undefined }}
           >
-            <Icon size={22} className="text-white drop-shadow" />
+            {hasCustomIcon ? (
+              // Custom uploaded image — neutral dark bg
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border:     "1px solid rgba(255,255,255,0.1)",
+                  padding:    "8px",
+                  boxShadow:  hovered ? `0 8px 25px ${cat.glow}` : undefined,
+                }}
+              >
+                <SkillIcon skill={skill} size={28} />
+              </div>
+            ) : (
+              // Registry icon — gradient background
+              <div
+                className={`w-12 h-12 rounded-xl bg-gradient-to-br ${cat.gradient} flex items-center justify-center shadow-lg flex-shrink-0`}
+                style={{ boxShadow: hovered ? `0 8px 25px ${cat.glow}` : undefined }}
+              >
+                <SkillIcon skill={skill} size={22} />
+              </div>
+            )}
           </motion.div>
 
+          {/* Badges */}
           <div className="flex flex-col items-end gap-1">
-            {/* Featured badge */}
             {skill.featured && (
               <div
                 className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
                 style={{
                   background: "rgba(245,158,11,0.12)",
-                  border: "1px solid rgba(245,158,11,0.25)",
-                  color: "#fbbf24",
+                  border:     "1px solid rgba(245,158,11,0.25)",
+                  color:      "#fbbf24",
                 }}
               >
                 <Star size={7} fill="currentColor" />
                 Top
               </div>
             )}
-            {/* Level badge */}
             <span
               className={`text-[10px] px-2 py-0.5 rounded-full font-semibold tracking-wide border ${
-                lvl.percent >= 80
+                lvl.percent >= 85
                   ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
-                  : lvl.percent >= 55
+                  : lvl.percent >= 65
                   ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                  : lvl.percent >= 40
+                  ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
                   : "bg-slate-500/10 text-slate-400 border-slate-500/20"
               }`}
             >
@@ -194,12 +363,11 @@ function SkillCard({ skill, index }: { skill: Skill; index: number }) {
           </div>
         </div>
 
-        {/* Name */}
+        {/* Name + category + years */}
         <div>
           <p className="text-sm font-bold text-white leading-tight">{skill.name}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{skill.category}</p>
-          {/* Years */}
-          {skill.years && skill.years > 0 && (
+          {skill.years != null && skill.years > 0 && (
             <div className="flex items-center gap-1 mt-1">
               <Clock size={9} className="text-slate-700" />
               <span className="text-[10px] text-slate-600">
@@ -209,7 +377,7 @@ function SkillCard({ skill, index }: { skill: Skill; index: number }) {
           )}
         </div>
 
-        {/* Progress */}
+        {/* Progress bar */}
         <div className="mt-auto">
           <div className="flex justify-between items-center mb-1.5">
             <span className="text-[10px] text-slate-600">Proficiency</span>
@@ -235,7 +403,10 @@ function SkillCard({ skill, index }: { skill: Skill; index: number }) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.6, ease: "easeInOut" }}
               className="absolute inset-0 rounded-2xl pointer-events-none overflow-hidden"
-              style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)" }}
+              style={{
+                background:
+                  "linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)",
+              }}
             />
           )}
         </AnimatePresence>
@@ -244,16 +415,19 @@ function SkillCard({ skill, index }: { skill: Skill; index: number }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Skills section
+// ---------------------------------------------------------------------------
 export default function Skills({ skills }: SkillsProps) {
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCategory, setActiveCategory]     = useState("All");
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
 
   const rawCategories = Array.from(new Set(skills.map((s) => s.category)));
-  const categories = ["All", ...rawCategories];
+  const categories    = ["All", ...rawCategories];
   const featuredCount = skills.filter((s) => s.featured).length;
 
   const filtered = skills.filter((s) => {
-    const catMatch = activeCategory === "All" || s.category === activeCategory;
+    const catMatch      = activeCategory === "All" || s.category === activeCategory;
     const featuredMatch = !showFeaturedOnly || s.featured;
     return catMatch && featuredMatch;
   });
@@ -268,7 +442,8 @@ export default function Skills({ skills }: SkillsProps) {
         <div
           className="absolute inset-0 opacity-[0.025]"
           style={{
-            backgroundImage: "linear-gradient(rgba(0,229,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,1) 1px, transparent 1px)",
+            backgroundImage:
+              "linear-gradient(rgba(0,229,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,1) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
           }}
         />
@@ -282,7 +457,6 @@ export default function Skills({ skills }: SkillsProps) {
           description="Technologies I use to craft exceptional digital experiences — from pixels to infrastructure."
         />
 
-        {/* Featured toggle */}
         {featuredCount > 0 && (
           <div className="flex justify-center mb-6">
             <motion.button
@@ -315,12 +489,14 @@ export default function Skills({ skills }: SkillsProps) {
           </div>
         )}
 
-        {/* Category filter */}
         <div className="flex flex-wrap gap-2 justify-center mb-12">
           {categories.map((cat) => {
-            const cfg = CATEGORY_CONFIG[cat];
+            const cfg      = CATEGORY_CONFIG[cat];
             const isActive = activeCategory === cat;
-            const count = cat === "All" ? skills.length : skills.filter((s) => s.category === cat).length;
+            const count    = cat === "All"
+              ? skills.length
+              : skills.filter((s) => s.category === cat).length;
+
             return (
               <motion.button
                 key={cat}
@@ -329,13 +505,22 @@ export default function Skills({ skills }: SkillsProps) {
                 whileTap={{ scale: 0.95 }}
                 className="relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
                 style={{
-                  background: isActive ? "linear-gradient(135deg, rgba(0,229,255,0.15), rgba(59,130,246,0.15))" : "rgba(255,255,255,0.03)",
-                  border: isActive ? "1px solid rgba(0,229,255,0.3)" : "1px solid rgba(255,255,255,0.06)",
-                  color: isActive ? "#fff" : "#64748b",
+                  background: isActive
+                    ? "linear-gradient(135deg, rgba(0,229,255,0.15), rgba(59,130,246,0.15))"
+                    : "rgba(255,255,255,0.03)",
+                  border: isActive
+                    ? "1px solid rgba(0,229,255,0.3)"
+                    : "1px solid rgba(255,255,255,0.06)",
+                  color:     isActive ? "#fff" : "#64748b",
                   boxShadow: isActive ? "0 0 20px rgba(0,229,255,0.15)" : "none",
                 }}
               >
-                {cfg && <cfg.icon size={13} className={isActive ? "text-cyan-400" : "text-slate-600"} />}
+                {cfg && (
+                  <cfg.icon
+                    size={13}
+                    className={isActive ? "text-cyan-400" : "text-slate-600"}
+                  />
+                )}
                 <span>{cfg?.label ?? cat}</span>
                 <span
                   className="text-[10px] px-1.5 py-0.5 rounded-full font-mono"
@@ -351,8 +536,11 @@ export default function Skills({ skills }: SkillsProps) {
           })}
         </div>
 
-        {/* Count line */}
-        <motion.div className="flex items-center gap-3 mb-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <motion.div
+          className="flex items-center gap-3 mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
           <span className="text-xs text-slate-600 font-mono">
             {filtered.length} skill{filtered.length !== 1 ? "s" : ""}
@@ -360,7 +548,6 @@ export default function Skills({ skills }: SkillsProps) {
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
         </motion.div>
 
-        {/* Grid */}
         <AnimatePresence mode="wait">
           <motion.div
             key={`${activeCategory}-${showFeaturedOnly}`}
@@ -377,7 +564,11 @@ export default function Skills({ skills }: SkillsProps) {
         </AnimatePresence>
 
         {filtered.length === 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-24"
+          >
             <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center mx-auto mb-4">
               <Sparkles size={28} className="text-slate-600" />
             </div>
@@ -385,7 +576,6 @@ export default function Skills({ skills }: SkillsProps) {
           </motion.div>
         )}
 
-        {/* Summary stats */}
         {skills.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -395,15 +585,18 @@ export default function Skills({ skills }: SkillsProps) {
             className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4"
           >
             {[
-              { label: "Total Skills",  value: skills.length,                                                           icon: Sparkles, color: "text-cyan-400"   },
-              { label: "Categories",    value: rawCategories.length,                                                    icon: Layers,   color: "text-blue-400"   },
-              { label: "Expert Level",  value: skills.filter((s) => s.level.toUpperCase() === "EXPERT").length,         icon: Cpu,      color: "text-purple-400" },
-              { label: "Featured",      value: featuredCount,                                                           icon: Star,     color: "text-amber-400"  },
+              { label: "Total Skills", value: skills.length,                                                   icon: Sparkles, color: "text-cyan-400"   },
+              { label: "Categories",   value: rawCategories.length,                                            icon: Layers,   color: "text-blue-400"   },
+              { label: "Expert Level", value: skills.filter((s) => s.level.toUpperCase() === "EXPERT").length, icon: Cpu,      color: "text-purple-400" },
+              { label: "Featured",     value: featuredCount,                                                   icon: Star,     color: "text-amber-400"  },
             ].map((stat, i) => (
               <div
                 key={i}
                 className="rounded-2xl p-5 text-center"
-                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}
+                style={{
+                  background: "rgba(255,255,255,0.02)",
+                  border:     "1px solid rgba(255,255,255,0.05)",
+                }}
               >
                 <stat.icon size={20} className={`${stat.color} mx-auto mb-2`} />
                 <div className="text-2xl font-black text-white">{stat.value}</div>
