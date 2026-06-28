@@ -4,19 +4,22 @@ export interface Profile {
   title: string;
   tagline: string;
   about: string;
+  mission?: string | null;
   email: string;
   phone: string;
   location: string;
   profileImage: string;
   github: string;
   linkedin: string;
-  leetcode?: string;
-  codechef?: string;
-  codeforces?: string;
-  twitter?: string;
-  instagram?: string;
+  leetcode?: string | null;
+  codechef?: string | null;
+  codeforces?: string | null;
+  twitter?: string | null;
+  instagram?: string | null;
   yearsExperience: number;
   available: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Project {
@@ -39,6 +42,8 @@ export interface Skill {
   icon?: string;
   years?: number;
   featured: boolean;
+  proficiency?: string | null;
+  percentage?: number | null;
 }
 
 export interface Experience {
@@ -79,6 +84,7 @@ export interface Resume {
   id: string;
   title: string;
   fileUrl: string;
+  thumbnailUrl?: string | null;  // ← this was missing — causes SSE refresh to not update the card
   createdAt: string;
   updatedAt: string;
 }
@@ -95,25 +101,32 @@ export interface Education {
   certificateUrl?: string;
 }
 
+// ── Setting ───────────────────────────────────────────────────
 export interface Setting {
   id: string;
   portfolioName: string;
-  heroTitle: string;
+  heroTitle?: string | null;       // optional — heroTypingTexts handles typing now
   heroSubtitle: string;
-  githubUrl?: string;
-  linkedinUrl?: string;
-  twitterUrl?: string;
-  instagramUrl?: string;
-  youtubeUrl?: string;
-  leetcodeUrl?: string;
-  codechefUrl?: string;
-  email?: string;
-  phone?: string;
-  location?: string;
-  resumeUrl?: string;
-  seoTitle?: string;
-  seoDescription?: string;
-  primaryColor?: string;
+  githubUrl?: string | null;
+  linkedinUrl?: string | null;
+  twitterUrl?: string | null;
+  instagramUrl?: string | null;
+  youtubeUrl?: string | null;
+  leetcodeUrl?: string | null;
+  codechefUrl?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  location?: string | null;
+  resumeUrl?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  primaryColor?: string | null;
+  heroGreeting?: string | null;
+  heroAvailableText?: string | null;
+  heroBusyText?: string | null;
+  heroTypingTexts?: string | null; // comma-separated: "AI Engineer, Full Stack Dev"
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AiKnowledge {
@@ -121,4 +134,19 @@ export interface AiKnowledge {
   question: string;
   answer: string;
   category?: string;
+}
+
+// ── VisitorStats ──────────────────────────────────────────────
+export interface VisitorStats {
+  totalVisitors: number;
+  todayVisitors: number;
+  thisWeekVisitors?: number;
+  countries: number;
+  cities: number;
+  returningPercentage: number;
+  topCountries?: Array<{ country: string; count: number }>;
+  topCities?: Array<{ city: string; count: number }>;
+  topBrowsers?: Array<{ browser: string; count: number }>;
+  topDevices?: Array<{ device: string; count: number }>;
+  topOs?: Array<{ os: string; count: number }>;
 }
