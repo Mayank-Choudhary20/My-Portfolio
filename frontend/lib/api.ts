@@ -1,9 +1,16 @@
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
+// ── Core fetch ────────────────────────────────────────────────
+// cache: "no-store" is the CRITICAL fix.
+// With next: { revalidate: 60 }, router.refresh() re-runs the
+// Server Component but fetch returns the 60-second cached response
+// — so the page looks unchanged even though the DB updated.
+// no-store bypasses the cache entirely: every refresh hits the
+// real backend and gets genuinely fresh data.
 async function apiFetch<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
-    next: { revalidate: 60 },
+    cache: "no-store",
     headers: { "Content-Type": "application/json" },
   });
   if (!res.ok) throw new Error(`API error: ${path} → ${res.status}`);
@@ -39,6 +46,23 @@ export async function getSettings() {
 }
 export async function getAiKnowledge() {
   return apiFetch<import("@/types/portfolio").AiKnowledge[]>("/ai");
+}
+export async function getVisitorStats(): Promise<
+  import("@/types/portfolio").VisitorStats
+> {
+  return apiFetch<import("@/types/portfolio").VisitorStats>("/visitor/stats");
+}
+
+// ── Fire-and-forget visitor tracking (client-side only) ──────
+export async function trackVisitor(): Promise<void> {
+  try {
+    await fetch(`${BASE_URL}/visitor`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch {
+    // Silently ignore
+  }
 }
 
 // Keep axios instance for backward compat (contact form uses it)
