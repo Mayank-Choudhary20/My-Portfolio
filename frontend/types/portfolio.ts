@@ -63,6 +63,7 @@ export interface Showcase {
   description:string;
   imageUrl:string;
   liveUrl?:string;
+  technologies:string[];
 }
 
 

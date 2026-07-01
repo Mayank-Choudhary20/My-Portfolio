@@ -1,26 +1,519 @@
 @import "tailwindcss";
 
+/* ============================================
+   DESIGN TOKENS
+============================================ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-primary: #020617;
+  --bg-secondary: #0a0f1e;
+  --bg-card: rgba(255, 255, 255, 0.03);
+
+  --accent-blue: #3b82f6;
+  --accent-cyan: #00e5ff;
+  --accent-purple: #7c3aed;
+  --accent-violet: #8b5cf6;
+  --accent-pink: #ec4899;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-glow: rgba(0, 229, 255, 0.2);
+
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  --shadow-glow-blue: 0 0 40px rgba(59, 130, 246, 0.15);
+  --shadow-glow-cyan: 0 0 40px rgba(0, 229, 255, 0.15);
+  --shadow-glow-purple: 0 0 40px rgba(124, 58, 237, 0.15);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ============================================
+   BASE RESET
+============================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ============================================
+   Z-INDEX SYSTEM
+   0   = Three.js canvas (fixed)
+   1   = main HTML wrapper
+   10  = section backgrounds
+   20  = section content
+   30  = cards
+   40  = floating elements
+   50  = navbar
+   60  = modals
+   9998= cursor ring
+   9999= cursor dot
+============================================ */
+
+/* ============================================
+   SECTION BACKGROUNDS
+   Sections need semi-transparent backgrounds
+   so text is readable over the 3D scene
+   but the scene is still subtly visible
+============================================ */
+.section-bg {
+  background: rgba(2, 6, 23, 0.85);
+  backdrop-filter: blur(2px);
+}
+
+.section-bg-strong {
+  background: rgba(2, 6, 23, 0.92);
+  backdrop-filter: blur(4px);
+}
+
+/* ============================================
+   SCROLLBAR
+============================================ */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #3b82f6, #7c3aed);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #00e5ff, #8b5cf6);
+}
+
+/* ============================================
+   SELECTION
+============================================ */
+::selection {
+  background: rgba(0, 229, 255, 0.2);
+  color: #fff;
+}
+
+/* ============================================
+   TYPOGRAPHY UTILITIES
+============================================ */
+.gradient-text {
+  background: linear-gradient(135deg, #00e5ff 0%, #3b82f6 50%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-warm {
+  background: linear-gradient(135deg, #f59e0b 0%, #ec4899 50%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   GLASS MORPHISM
+============================================ */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.glass-card {
+  background: rgba(2, 6, 23, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background: rgba(2, 6, 23, 0.75);
+  border-color: rgba(0, 229, 255, 0.2);
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   GLOW EFFECTS
+============================================ */
+.glow-blue {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.3), 0 0 60px rgba(59, 130, 246, 0.1);
+}
+.glow-cyan {
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.3), 0 0 60px rgba(0, 229, 255, 0.1);
+}
+.glow-purple {
+  box-shadow: 0 0 30px rgba(124, 58, 237, 0.3), 0 0 60px rgba(124, 58, 237, 0.1);
+}
+.text-glow-cyan {
+  text-shadow: 0 0 20px rgba(0, 229, 255, 0.5), 0 0 40px rgba(0, 229, 255, 0.2);
+}
+.text-glow-blue {
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.2);
+}
+
+/* ============================================
+   ANIMATED GRADIENT BORDER
+============================================ */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, #00e5ff, #3b82f6, #7c3aed, #00e5ff);
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: gradientBorderAnim 4s ease infinite;
+}
+
+@keyframes gradientBorderAnim {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ============================================
+   SECTION LAYOUT
+============================================ */
+.section-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .section-container { padding: 0 3rem; }
+}
+
+/* ============================================
+   GRID BACKGROUND
+============================================ */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(59, 130, 246, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* ============================================
+   ANIMATIONS
+============================================ */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%       { opacity: 0.8; transform: scale(1.05); }
+}
+@keyframes rotate-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes shimmer {
+  0%   { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes blob-morph {
+  0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+  25%       { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+  50%       { border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%; }
+  75%       { border-radius: 60% 40% 60% 30% / 60% 30% 40% 70%; }
+}
+
+.animate-float         { animation: float 6s ease-in-out infinite; }
+.animate-pulse-glow    { animation: pulse-glow 3s ease-in-out infinite; }
+.animate-rotate-slow   { animation: rotate-slow 20s linear infinite; }
+.animate-blob-morph    { animation: blob-morph 8s ease-in-out infinite; }
+.animate-gradient-shift {
+  animation: gradient-shift 4s ease infinite;
+  background-size: 200% 200%;
+}
+
+/* ============================================
+   CUSTOM CURSOR
+============================================ */
+.cursor-dot {
+  width: 8px;
+  height: 8px;
+  background: #00e5ff;
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  transition: transform 0.1s ease;
+}
+
+.cursor-ring {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid rgba(0, 229, 255, 0.6);
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 99998;
+  transition: transform 0.15s ease, width 0.2s ease, height 0.2s ease, border-color 0.2s ease;
+}
+
+/* ============================================
+   LOADER BAR
+============================================ */
+.loader-bar {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00e5ff, #3b82f6, #7c3aed, transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ============================================
+   BUTTONS
+============================================ */
+.btn-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  background: linear-gradient(135deg, #3b82f6, #7c3aed);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.btn-primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #00e5ff, #3b82f6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.btn-primary:hover::before { opacity: 1; }
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+}
+.btn-primary > * { position: relative; z-index: 1; }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.btn-ghost:hover {
+  border-color: rgba(0, 229, 255, 0.5);
+  background: rgba(0, 229, 255, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
+}
+
+/* ============================================
+   SECTION TITLE
+============================================ */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1rem;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 229, 0.2);
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #00e5ff;
+  margin-bottom: 1.5rem;
+}
+
+/* ============================================
+   TIMELINE
+============================================ */
+.timeline-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, #3b82f6 20%, #7c3aed 80%, transparent);
+}
+
+/* ============================================
+   SKILL CARD
+============================================ */
+.skill-card {
+  transform-style: preserve-3d;
+  transform: perspective(1000px);
+  transition: all 0.3s ease;
+}
+
+/* ============================================
+   PROGRESS RING
+============================================ */
+.progress-ring circle {
+  transition: stroke-dashoffset 1s ease;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+/* ============================================
+   HOLOGRAPHIC
+============================================ */
+.holographic {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 229, 255, 0.1) 0%,
+    rgba(59, 130, 246, 0.1) 25%,
+    rgba(124, 58, 237, 0.1) 50%,
+    rgba(236, 72, 153, 0.1) 75%,
+    rgba(0, 229, 255, 0.1) 100%
+  );
+  background-size: 400% 400%;
+  animation: gradient-shift 6s ease infinite;
+}
+
+/* ============================================
+   RESPONSIVE
+============================================ */
+@media (max-width: 768px) {
+  .section-container { padding: 0 1rem; }
+}
+
+/* ============================================
+   FOCUS STYLES
+============================================ */
+*:focus-visible {
+  outline: 2px solid rgba(0, 229, 255, 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============================================
+   IMAGES & IFRAME
+============================================ */
+img     { max-width: 100%; height: auto; }
+iframe  { border: none; }
+canvas  { display: block; }
+
+/* ============================================
+   HERO SECTION — transparent so avatar shows
+============================================ */
+#hero {
+  position: relative;
+  z-index: 1;
+  /* Transparent — 3D scene is visible here */
+}
+
+/* ============================================
+   OTHER SECTIONS — semi-opaque for readability
+============================================ */
+#about,
+#skills,
+#experience,
+#projects,
+#certificates,
+#showcase,
+#contact,
+#footer {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+}
+
+/* ============================================
+   SECTION INNER BACKGROUNDS
+   Applied at the section element level
+   (not the wrapper div) so we control opacity
+============================================ */
+#about       > section,
+#skills      > section,
+#experience  > section,
+#projects    > section,
+#certificates > section,
+#showcase    > section,
+#contact     > section {
+  background: rgba(2, 6, 23, 0.82) !important;
+  backdrop-filter: blur(3px);
+}
+
+/* Footer */
+#footer > footer {
+  background: rgba(2, 6, 23, 0.90) !important;
+}
+
+/* ============================================
+   AVATAR RIGHT-SIDE CONTENT MARGIN
+   Push text content to the LEFT so it doesn't
+   overlap with the avatar on the RIGHT side.
+   Avatar is at ~55% of screen width.
+============================================ */
+@media (min-width: 1024px) {
+  #hero .hero-content {
+    max-width: 52%;
+  }
+}
+
+/* ============================================
+   MOBILE: hero stacks vertically
+============================================ */
+@media (max-width: 1023px) {
+  #hero-section .section-container > div {
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+}
+
+/* ============================================
+   NO OVERFLOW
+============================================ */
+section + section,
+div[id] + div[id] {
+  margin-top: 0 !important;
 }

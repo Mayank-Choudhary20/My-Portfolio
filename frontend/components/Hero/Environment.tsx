@@ -1,9 +1,7 @@
 "use client";
 
-import { Environment } from "@react-three/drei";
-
+// Using simplified lighting instead of Environment preset 
+// to avoid heavy PMREM texture processing that causes WebGL context loss
 export default function HeroEnvironment() {
-  return (
-    <Environment preset="city" />
-  );
+  return null;
 }
