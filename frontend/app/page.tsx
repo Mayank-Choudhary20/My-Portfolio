@@ -1,4 +1,15 @@
-import api from "@/lib/api";
+import {
+  getProfile,
+  getProjects,
+  getSkills,
+  getCertificates,
+  getExperience,
+  getShowcase,
+  getResume,
+  getEducation,
+  getSettings,
+  getAiKnowledge,
+} from "@/lib/api";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Hero from "@/components/sections/Hero";
@@ -9,76 +20,88 @@ import Projects from "@/components/sections/Projects";
 import Certificates from "@/components/sections/Certificates";
 import Showcase from "@/components/sections/Showcase";
 import Contact from "@/components/sections/Contact";
+import Education from "@/components/sections/Education";
+import ResumeSection from "@/components/sections/ResumeSection";
+import CodingProfiles from "@/components/sections/CodingProfiles";
+import AskMayankAI from "@/components/sections/AskMayankAI";
 
 async function getData() {
-  try {
-    const [
-      profile,
-      projects,
-      skills,
-      certificates,
-      experience,
-      showcase,
-      resume,
-    ] = await Promise.all([
-      api.get("/profile"),
-      api.get("/projects"),
-      api.get("/skills"),
-      api.get("/certificates"),
-      api.get("/experience"),
-      api.get("/showcase"),
-      api.get("/resume"),
-    ]);
+  const results = await Promise.allSettled([
+    getProfile(),
+    getProjects(),
+    getSkills(),
+    getCertificates(),
+    getExperience(),
+    getShowcase(),
+    getResume(),
+    getEducation(),
+    getSettings(),
+    getAiKnowledge(),
+  ]);
 
-    return {
-      profile: profile.data,
-      projects: projects.data,
-      skills: skills.data,
-      certificates: certificates.data,
-      experience: experience.data,
-      showcase: showcase.data,
-      resume: resume.data,
-    };
-  } catch (error: unknown) {
-    const err = error as {
-      response?: { data?: unknown };
-      message?: string;
-    };
-    console.log("API ERROR:", err.response?.data || err.message);
-    return {
-      profile: null,
-      projects: [],
-      skills: [],
-      certificates: [],
-      experience: [],
-      showcase: [],
-      resume: null,
-    };
-  }
+  const [
+    profile,
+    projects,
+    skills,
+    certificates,
+    experience,
+    showcase,
+    resume,
+    education,
+    settings,
+    aiKnowledge,
+  ] = results;
+
+  return {
+    profile:
+      profile.status === "fulfilled" ? profile.value : null,
+    projects:
+      projects.status === "fulfilled" ? projects.value : [],
+    skills:
+      skills.status === "fulfilled" ? skills.value : [],
+    certificates:
+      certificates.status === "fulfilled" ? certificates.value : [],
+    experience:
+      experience.status === "fulfilled" ? experience.value : [],
+    showcase:
+      showcase.status === "fulfilled" ? showcase.value : [],
+    resume:
+      resume.status === "fulfilled" ? resume.value : null,
+    education:
+      education.status === "fulfilled" ? education.value : [],
+    settings:
+      settings.status === "fulfilled" ? settings.value : null,
+    aiKnowledge:
+      aiKnowledge.status === "fulfilled" ? aiKnowledge.value : [],
+  };
+}
+
+function SectionDivider({ color }: { color: string }) {
+  return (
+    <div
+      aria-hidden
+      style={{
+        height: 1,
+        background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
+      }}
+    />
+  );
 }
 
 export default async function Home() {
   const data = await getData();
 
   return (
-    /*
-      position: relative + z-index: 1 ensures HTML sits ABOVE
-      the fixed Three.js canvas (z-index: 0).
-      background is transparent so the 3D scene shows through
-      wherever there is no opaque HTML content.
-    */
     <main
       style={{
         position: "relative",
         zIndex: 1,
         minHeight: "100vh",
-        // Transparent background so 3D scene is visible
         background: "transparent",
       }}
     >
-      <Navbar profile={data.profile} />
+      <Navbar profile={data.profile} settings={data.settings} />
 
-      {/* Hero — transparent bg so avatar shows behind text */}
       <div id="hero">
         <Hero profile={data.profile} resume={data.resume} />
       </div>
@@ -91,11 +114,17 @@ export default async function Home() {
 
       <SectionDivider color="rgba(59,130,246,0.06)" />
 
+      <div id="education">
+        <Education education={data.education} />
+      </div>
+
+      <SectionDivider color="rgba(124,58,237,0.06)" />
+
       <div id="skills">
         <Skills skills={data.skills} />
       </div>
 
-      <SectionDivider color="rgba(124,58,237,0.06)" />
+      <SectionDivider color="rgba(59,130,246,0.06)" />
 
       <div id="experience">
         <Experience experience={data.experience} />
@@ -121,25 +150,35 @@ export default async function Home() {
 
       <SectionDivider color="rgba(124,58,237,0.06)" />
 
+      <div id="coding-profiles">
+        <CodingProfiles profile={data.profile} />
+      </div>
+
+      <SectionDivider color="rgba(59,130,246,0.06)" />
+
+      <div id="resume">
+        <ResumeSection resume={data.resume} />
+      </div>
+
+      <SectionDivider color="rgba(0,229,255,0.06)" />
+
+      <div id="ai">
+        <AskMayankAI aiKnowledge={data.aiKnowledge} profile={data.profile} />
+      </div>
+
+      <SectionDivider color="rgba(124,58,237,0.06)" />
+
       <div id="contact">
         <Contact profile={data.profile} />
       </div>
 
       <div id="footer">
-        <Footer profile={data.profile} resume={data.resume} />
+        <Footer
+          profile={data.profile}
+          resume={data.resume}
+          settings={data.settings}
+        />
       </div>
     </main>
-  );
-}
-
-function SectionDivider({ color }: { color: string }) {
-  return (
-    <div
-      aria-hidden
-      style={{
-        height: 1,
-        background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-      }}
-    />
   );
 }
