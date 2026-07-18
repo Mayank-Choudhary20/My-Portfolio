@@ -1,10 +1,19 @@
 import api from "@/lib/api";
 
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+
+import Hero from "@/components/sections/Hero";
+import About from "@/components/sections/About";
+import Skills from "@/components/sections/Skills";
+import Experience from "@/components/sections/Experience";
+import Projects from "@/components/sections/Projects";
+import Certificates from "@/components/sections/Certificates";
+import Showcase from "@/components/sections/Showcase";
+import Contact from "@/components/sections/Contact";
 
 async function getData() {
-
   try {
-
     const [
       profile,
       projects,
@@ -12,7 +21,7 @@ async function getData() {
       certificates,
       experience,
       showcase,
-      resume
+      resume,
     ] = await Promise.all([
       api.get("/profile"),
       api.get("/projects"),
@@ -23,7 +32,6 @@ async function getData() {
       api.get("/resume"),
     ]);
 
-
     return {
       profile: profile.data,
       projects: projects.data,
@@ -33,203 +41,45 @@ async function getData() {
       showcase: showcase.data,
       resume: resume.data,
     };
-
-
-  } catch(error:any){
-
-    console.log(
-      "API ERROR:",
-      error.response?.data || error.message
-    );
+  } catch (error: any) {
+    console.log("API ERROR:", error.response?.data || error.message);
 
     return {
-      profile:null,
-      projects:[],
-      skills:[],
-      certificates:[],
-      experience:[],
-      showcase:[],
-      resume:null,
+      profile: null,
+      projects: [],
+      skills: [],
+      certificates: [],
+      experience: [],
+      showcase: [],
+      resume: null,
     };
-
   }
-
 }
 
+export default async function Home() {
+  const data = await getData();
 
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <Navbar />
 
-export default async function Home(){
+      <Hero profile={data.profile} resume={data.resume} />
 
-const data=await getData();
+      <About profile={data.profile} />
 
+      <Skills skills={data.skills} />
 
-return (
+      <Experience experience={data.experience} />
 
-<main>
+      <Projects projects={data.projects} />
 
+      <Certificates certificates={data.certificates} />
 
-<h1>
-{data.profile.name}
-</h1>
+      <Showcase showcase={data.showcase} />
 
+      <Contact />
 
-<h2>
-{data.profile.title}
-</h2>
-
-
-<p>
-{data.profile.tagline}
-</p>
-
-
-<hr/>
-
-
-<h2>
-Projects
-</h2>
-
-
-{
-data.projects.map((project:any)=>(
-
-<div key={project.id}>
-
-<h3>
-{project.title}
-</h3>
-
-<p>
-{project.description}
-</p>
-
-
-</div>
-
-))
-}
-
-
-
-<hr/>
-
-
-<h2>
-Experience
-</h2>
-
-
-{
-data.experience.map((exp:any)=>(
-
-<div key={exp.id}>
-
-<h3>
-{exp.role}
-</h3>
-
-<p>
-{exp.company}
-</p>
-
-<p>
-{exp.description}
-</p>
-
-</div>
-
-))
-}
-
-
-
-
-<hr/>
-
-
-<h2>
-Skills
-</h2>
-
-
-{
-data.skills.map((skill:any)=>(
-
-<p key={skill.id}>
-{skill.name} - {skill.level}
-</p>
-
-))
-}
-
-
-
-
-
-<hr/>
-
-
-<h2>
-Certificates
-</h2>
-
-
-{
-data.certificates.map((c:any)=>(
-
-<p key={c.id}>
-{c.title}
-</p>
-
-))
-}
-
-
-
-
-
-<hr/>
-
-
-<h2>
-Apps & Websites
-</h2>
-
-
-{
-data.showcase.map((item:any)=>(
-
-<div key={item.id}>
-
-<h3>
-{item.type}
-</h3>
-
-<p>
-{item.title}
-</p>
-
-</div>
-
-))
-}
-
-
-
-
-
-<hr/>
-
-
-<a href={data.resume.fileUrl}>
-Download Resume
-</a>
-
-
-
-</main>
-
-)
-
+      <Footer />
+    </main>
+  );
 }
