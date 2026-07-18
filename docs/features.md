@@ -20,3 +20,32 @@ Analytics
 Visitor Tracking
 AI Configuration
 Contact Messages
+
+
+
+✅ Authentication
+✅ Projects
+⬜ Certificates
+⬜ Experience
+⬜ Skills
+⬜ Resume
+⬜ About Me
+⬜ Social Links
+⬜ Contact Messages
+⬜ Settings
+
+↓
+
+Admin Dashboard
+
+↓
+
+Visitor Analytics
+
+↓
+
+AI Assistant
+
+↓
+
+Deploy
