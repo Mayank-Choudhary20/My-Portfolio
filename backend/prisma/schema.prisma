@@ -37,26 +37,22 @@ model Certificate {
   credentialUrl String?
   imageUrl      String
   featured      Boolean  @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Experience {
-  id          String    @id @default(cuid())
-  company     String
-  role        String
-  description String
-  startDate   DateTime
-  endDate     DateTime?
-  current     Boolean
-
-  companyLogo String?
-
+  id           String    @id @default(cuid())
+  company      String
+  role         String
+  startDate    DateTime
+  endDate      DateTime?
+  current      Boolean
+  description  String
+  companyLogo  String?
   technologies String[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Resume {
@@ -68,37 +64,26 @@ model Resume {
 }
 
 model Profile {
-  id               String   @id @default(cuid())
-
-  name             String
-  title            String
-  tagline          String
-
-  about            String
-
-  email            String
-  phone            String
-
-  location         String
-
-  profileImage     String
-
-  github           String
-  linkedin         String
-
-  leetcode         String?
-  codechef         String?
-  codeforces       String?
-
-  twitter          String?
-  instagram        String?
-
-  yearsExperience  Int
-
-  available        Boolean @default(true)
-
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  title           String
+  tagline         String
+  about           String
+  email           String
+  phone           String
+  location        String
+  profileImage    String
+  github          String
+  linkedin        String
+  leetcode        String?
+  codechef        String?
+  codeforces      String?
+  twitter         String?
+  instagram       String?
+  yearsExperience Int
+  available       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Visitor {
@@ -123,121 +108,73 @@ model Contact {
 }
 
 model Setting {
-  id                 String   @id @default(cuid())
-
-  portfolioName      String
-  heroTitle          String
-  heroSubtitle       String
-
-  githubUrl          String?
-  linkedinUrl        String?
-  twitterUrl         String?
-  instagramUrl       String?
-  youtubeUrl         String?
-  leetcodeUrl        String?
-  codechefUrl        String?
-
-  email              String?
-  phone              String?
-  location           String?
-
-  resumeUrl          String?
-
-  seoTitle           String?
-  seoDescription     String?
-
-  primaryColor       String? @default("#3B82F6")
-
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id             String   @id @default(cuid())
+  portfolioName  String
+  heroTitle      String
+  heroSubtitle   String
+  githubUrl      String?
+  linkedinUrl    String?
+  twitterUrl     String?
+  instagramUrl   String?
+  youtubeUrl     String?
+  leetcodeUrl    String?
+  codechefUrl    String?
+  email          String?
+  phone          String?
+  location       String?
+  resumeUrl      String?
+  seoTitle       String?
+  seoDescription String?
+  primaryColor   String?  @default("#3B82F6")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model AiKnowledge {
   id        String   @id @default(cuid())
-
   question  String
   answer    String
-
   category  String?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-
 model Skill {
-
-  id          String   @id @default(cuid())
-
-  name        String
-
-  category    String
-
-  level       String
-
-  icon        String?
-
-  years       Int?
-
-  featured    Boolean @default(false)
-
-  createdAt   DateTime @default(now())
-
-  updatedAt   DateTime @updatedAt
-
+  id        String   @id @default(cuid())
+  name      String
+  category  String
+  level     String
+  icon      String?
+  years     Int?
+  featured  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Education {
-
-  id          String   @id @default(cuid())
-
-  degree      String
-
-  institution String
-
-  field       String?
-
-  startDate   DateTime
-
-  endDate     DateTime?
-
-  grade       String?
-
-  description String?
-
+  id             String    @id @default(cuid())
+  degree         String
+  institution    String
+  field          String?
+  startDate      DateTime
+  endDate        DateTime?
+  grade          String?
+  description    String?
   certificateUrl String?
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model Showcase {
-
-  id          String @id @default(cuid())
-
-  title       String
-
-  type        String
-  // PHONE or LAPTOP
-
-  description String
-
-  imageUrl    String
-
-  liveUrl     String?
-
-  githubUrl   String?
-
+  id           String   @id @default(cuid())
+  title        String
+  type         String
+  description  String
+  imageUrl     String
+  liveUrl      String?
+  githubUrl    String?
   technologies String[]
-
-  featured Boolean @default(false)
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
+  featured     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
-
-
