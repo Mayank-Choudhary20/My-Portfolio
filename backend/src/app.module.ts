@@ -8,6 +8,15 @@ import { UploadModule } from './upload/upload.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { ExperienceModule } from './experience/experience.module';
 import { ResumeModule } from './resume/resume.module';
+import { ProfileModule } from './profile/profile.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { ContactModule } from './contact/contact.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { SettingsModule } from './settings/settings.module';
+import { AiModule } from './ai/ai.module';
+import { SkillsModule } from './skills/skills.module';
+import { EducationModule } from './education/education.module';
+import { ShowcaseModule } from './showcase/showcase.module';
 
 @Module({
   imports: [
@@ -22,6 +31,15 @@ import { ResumeModule } from './resume/resume.module';
     CertificatesModule,
     ExperienceModule,
     ResumeModule,
+    ProfileModule,
+    AnalyticsModule,
+    ContactModule,
+    DashboardModule,
+    SettingsModule,
+    AiModule,
+    SkillsModule,
+    EducationModule,
+    ShowcaseModule,
   ],
 })
 export class AppModule {}
