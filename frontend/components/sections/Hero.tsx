@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Mail, Download } from "lucide-react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
-
+import HeroCanvas from "@/components/Hero/HeroCanvas";
 type HeroProps = {
   profile: any;
   resume: any;
@@ -99,21 +99,15 @@ export default function Hero({ profile, resume }: HeroProps) {
         {/* Right */}
 
         <motion.div
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7 }}
-          className="mt-16 lg:mt-0"
-        >
-          <div className="h-80 w-80 overflow-hidden rounded-full border-4 border-blue-500 shadow-2xl">
-
-            <img
-              src="/profile.jpg"
-              alt={profile?.name}
-              className="h-full w-full object-cover"
-            />
-
-          </div>
-        </motion.div>
+  initial={{ opacity: 0, x: 40 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ duration: 0.8 }}
+  className="relative mt-16 h-[650px] w-full lg:mt-0 lg:w-[48%]"
+>
+  <div className="absolute inset-0 rounded-[40px] border border-cyan-500/20 bg-white/5 backdrop-blur-xl shadow-[0_0_80px_rgba(0,255,255,0.15)] overflow-hidden">
+    <HeroCanvas />
+  </div>
+</motion.div>
 
       </div>
     </section>
