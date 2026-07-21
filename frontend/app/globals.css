@@ -45,6 +45,7 @@ html {
   scroll-padding-top: 80px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-y: scroll;
 }
 
 body {
@@ -53,36 +54,6 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
-}
-
-/* ============================================
-   Z-INDEX SYSTEM
-   0   = Three.js canvas (fixed)
-   1   = main HTML wrapper
-   10  = section backgrounds
-   20  = section content
-   30  = cards
-   40  = floating elements
-   50  = navbar
-   60  = modals
-   9998= cursor ring
-   9999= cursor dot
-============================================ */
-
-/* ============================================
-   SECTION BACKGROUNDS
-   Sections need semi-transparent backgrounds
-   so text is readable over the 3D scene
-   but the scene is still subtly visible
-============================================ */
-.section-bg {
-  background: rgba(2, 6, 23, 0.85);
-  backdrop-filter: blur(2px);
-}
-
-.section-bg-strong {
-  background: rgba(2, 6, 23, 0.92);
-  backdrop-filter: blur(4px);
 }
 
 /* ============================================
@@ -158,15 +129,10 @@ body {
 /* ============================================
    GLOW EFFECTS
 ============================================ */
-.glow-blue {
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.3), 0 0 60px rgba(59, 130, 246, 0.1);
-}
-.glow-cyan {
-  box-shadow: 0 0 30px rgba(0, 229, 255, 0.3), 0 0 60px rgba(0, 229, 255, 0.1);
-}
-.glow-purple {
-  box-shadow: 0 0 30px rgba(124, 58, 237, 0.3), 0 0 60px rgba(124, 58, 237, 0.1);
-}
+.glow-blue   { box-shadow: 0 0 30px rgba(59, 130, 246, 0.3), 0 0 60px rgba(59, 130, 246, 0.1); }
+.glow-cyan   { box-shadow: 0 0 30px rgba(0, 229, 255, 0.3),  0 0 60px rgba(0, 229, 255, 0.1);  }
+.glow-purple { box-shadow: 0 0 30px rgba(124, 58, 237, 0.3), 0 0 60px rgba(124, 58, 237, 0.1); }
+
 .text-glow-cyan {
   text-shadow: 0 0 20px rgba(0, 229, 255, 0.5), 0 0 40px rgba(0, 229, 255, 0.2);
 }
@@ -177,9 +143,7 @@ body {
 /* ============================================
    ANIMATED GRADIENT BORDER
 ============================================ */
-.gradient-border {
-  position: relative;
-}
+.gradient-border { position: relative; }
 .gradient-border::before {
   content: "";
   position: absolute;
@@ -195,9 +159,9 @@ body {
 }
 
 @keyframes gradientBorderAnim {
-  0%   { background-position: 0% 50%; }
+  0%   { background-position: 0% 50%;   }
   50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  100% { background-position: 0% 50%;   }
 }
 
 /* ============================================
@@ -214,6 +178,93 @@ body {
   .section-container { padding: 0 3rem; }
 }
 
+@media (max-width: 768px) {
+  .section-container { padding: 0 1rem; }
+}
+
+/* ============================================
+   SECTION BREAK
+   A beautiful, visible divider between sections
+============================================ */
+
+/* Variant color tokens */
+.section-break--cyan   { --brk-color: #00e5ff; --brk-glow: rgba(0,229,255,0.6);   --brk-line: rgba(0,229,255,0.25);   }
+.section-break--blue   { --brk-color: #3b82f6; --brk-glow: rgba(59,130,246,0.6);  --brk-line: rgba(59,130,246,0.25);  }
+.section-break--purple { --brk-color: #8b5cf6; --brk-glow: rgba(139,92,246,0.6);  --brk-line: rgba(139,92,246,0.25);  }
+.section-break--amber  { --brk-color: #f59e0b; --brk-glow: rgba(245,158,11,0.6);  --brk-line: rgba(245,158,11,0.25);  }
+.section-break--green  { --brk-color: #10b981; --brk-glow: rgba(16,185,129,0.6);  --brk-line: rgba(16,185,129,0.25);  }
+.section-break--pink   { --brk-color: #ec4899; --brk-glow: rgba(236,72,153,0.6);  --brk-line: rgba(236,72,153,0.25);  }
+
+/* The wrapper — full-width, generous height */
+.section-break-wrapper {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* faint horizontal rule that spans the full width */
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--brk-line) 20%,
+      var(--brk-line) 80%,
+      transparent 100%
+    )
+    center / 100% 1px no-repeat;
+  overflow: visible;
+}
+
+/* Centre badge */
+.section-break-badge {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: #020617;           /* solid bg to "cut" through the line */
+  border: 1px solid var(--brk-line);
+  box-shadow:
+    0 0 16px var(--brk-glow),
+    inset 0 0 12px rgba(0,0,0,0.4);
+}
+
+/* Left/right ticks */
+.section-break-tick {
+  width: 18px;
+  height: 1px;
+  border-radius: 999px;
+  background: var(--brk-color);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* Centre diamond */
+.section-break-gem {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  transform: rotate(45deg);
+  background: var(--brk-color);
+  box-shadow: 0 0 10px var(--brk-glow);
+  flex-shrink: 0;
+}
+
+/* Section label text */
+.section-break-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brk-color);
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
 /* ============================================
    GRID BACKGROUND
 ============================================ */
@@ -228,25 +279,25 @@ body {
    ANIMATIONS
 ============================================ */
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
+  0%, 100% { transform: translateY(0px);   }
   50%       { transform: translateY(-12px); }
 }
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
+  0%, 100% { opacity: 0.4; transform: scale(1);    }
   50%       { opacity: 0.8; transform: scale(1.05); }
 }
 @keyframes rotate-slow {
-  from { transform: rotate(0deg); }
+  from { transform: rotate(0deg);   }
   to   { transform: rotate(360deg); }
 }
 @keyframes shimmer {
   0%   { background-position: -1000px 0; }
-  100% { background-position: 1000px 0; }
+  100% { background-position:  1000px 0; }
 }
 @keyframes gradient-shift {
-  0%   { background-position: 0% 50%; }
+  0%   { background-position: 0%   50%; }
   50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  100% { background-position: 0%   50%; }
 }
 @keyframes blob-morph {
   0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
@@ -255,10 +306,10 @@ body {
   75%       { border-radius: 60% 40% 60% 30% / 60% 30% 40% 70%; }
 }
 
-.animate-float         { animation: float 6s ease-in-out infinite; }
-.animate-pulse-glow    { animation: pulse-glow 3s ease-in-out infinite; }
-.animate-rotate-slow   { animation: rotate-slow 20s linear infinite; }
-.animate-blob-morph    { animation: blob-morph 8s ease-in-out infinite; }
+.animate-float          { animation: float 6s ease-in-out infinite;      }
+.animate-pulse-glow     { animation: pulse-glow 3s ease-in-out infinite; }
+.animate-rotate-slow    { animation: rotate-slow 20s linear infinite;    }
+.animate-blob-morph     { animation: blob-morph 8s ease-in-out infinite; }
 .animate-gradient-shift {
   animation: gradient-shift 4s ease infinite;
   background-size: 200% 200%;
@@ -286,7 +337,11 @@ body {
   position: fixed;
   pointer-events: none;
   z-index: 99998;
-  transition: transform 0.15s ease, width 0.2s ease, height 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    width 0.2s ease,
+    height 0.2s ease,
+    border-color 0.2s ease;
 }
 
 /* ============================================
@@ -294,7 +349,14 @@ body {
 ============================================ */
 .loader-bar {
   height: 2px;
-  background: linear-gradient(90deg, transparent, #00e5ff, #3b82f6, #7c3aed, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #00e5ff,
+    #3b82f6,
+    #7c3aed,
+    transparent
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -355,7 +417,7 @@ body {
 }
 
 /* ============================================
-   SECTION TITLE
+   SECTION TITLE / LABEL
 ============================================ */
 .section-label {
   display: inline-flex;
@@ -363,7 +425,7 @@ body {
   gap: 0.5rem;
   padding: 0.35rem 1rem;
   background: rgba(0, 229, 255, 0.08);
-  border: 1px solid rgba(0, 229, 229, 0.2);
+  border: 1px solid rgba(0, 229, 255, 0.2);
   border-radius: 100px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -382,7 +444,13 @@ body {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: linear-gradient(180deg, transparent, #3b82f6 20%, #7c3aed 80%, transparent);
+  background: linear-gradient(
+    180deg,
+    transparent,
+    #3b82f6 20%,
+    #7c3aed 80%,
+    transparent
+  );
 }
 
 /* ============================================
@@ -409,21 +477,14 @@ body {
 .holographic {
   background: linear-gradient(
     135deg,
-    rgba(0, 229, 255, 0.1) 0%,
-    rgba(59, 130, 246, 0.1) 25%,
-    rgba(124, 58, 237, 0.1) 50%,
-    rgba(236, 72, 153, 0.1) 75%,
-    rgba(0, 229, 255, 0.1) 100%
+    rgba(0, 229, 255, 0.1)   0%,
+    rgba(59, 130, 246, 0.1)  25%,
+    rgba(124, 58, 237, 0.1)  50%,
+    rgba(236, 72, 153, 0.1)  75%,
+    rgba(0, 229, 255, 0.1)  100%
   );
   background-size: 400% 400%;
   animation: gradient-shift 6s ease infinite;
-}
-
-/* ============================================
-   RESPONSIVE
-============================================ */
-@media (max-width: 768px) {
-  .section-container { padding: 0 1rem; }
 }
 
 /* ============================================
@@ -436,30 +497,33 @@ body {
 }
 
 /* ============================================
-   IMAGES & IFRAME
+   IMAGES / IFRAME / CANVAS
 ============================================ */
-img     { max-width: 100%; height: auto; }
-iframe  { border: none; }
-canvas  { display: block; }
+img    { max-width: 100%; height: auto; }
+iframe { border: none; }
+canvas { display: block; }
 
 /* ============================================
-   HERO SECTION — transparent so avatar shows
+   HERO SECTION
 ============================================ */
 #hero {
   position: relative;
   z-index: 1;
-  /* Transparent — 3D scene is visible here */
 }
 
 /* ============================================
-   OTHER SECTIONS — semi-opaque for readability
+   ALL SECTIONS — positioning & stacking
 ============================================ */
 #about,
+#education,
 #skills,
 #experience,
 #projects,
 #certificates,
 #showcase,
+#coding-profiles,
+#resume,
+#ai,
 #contact,
 #footer {
   position: relative;
@@ -469,51 +533,44 @@ canvas  { display: block; }
 
 /* ============================================
    SECTION INNER BACKGROUNDS
-   Applied at the section element level
-   (not the wrapper div) so we control opacity
 ============================================ */
-#about       > section,
-#skills      > section,
-#experience  > section,
-#projects    > section,
+#about        > section,
+#education    > section,
+#skills       > section,
+#experience   > section,
+#projects     > section,
 #certificates > section,
-#showcase    > section,
-#contact     > section {
+#showcase     > section,
+#coding-profiles > section,
+#resume       > section,
+#ai           > section,
+#contact      > section {
   background: rgba(2, 6, 23, 0.82) !important;
   backdrop-filter: blur(3px);
 }
 
-/* Footer */
 #footer > footer {
   background: rgba(2, 6, 23, 0.90) !important;
 }
 
 /* ============================================
-   AVATAR RIGHT-SIDE CONTENT MARGIN
-   Push text content to the LEFT so it doesn't
-   overlap with the avatar on the RIGHT side.
-   Avatar is at ~55% of screen width.
+   NO MARGIN COLLAPSE between sections
 ============================================ */
-@media (min-width: 1024px) {
-  #hero .hero-content {
-    max-width: 52%;
-  }
+section + section,
+div[id] + div[id] {
+  margin-top: 0 !important;
 }
 
 /* ============================================
-   MOBILE: hero stacks vertically
+   AVATAR / HERO CONTENT
 ============================================ */
+@media (min-width: 1024px) {
+  #hero .hero-content { max-width: 52%; }
+}
+
 @media (max-width: 1023px) {
   #hero-section .section-container > div {
     flex-direction: column !important;
     align-items: center !important;
   }
-}
-
-/* ============================================
-   NO OVERFLOW
-============================================ */
-section + section,
-div[id] + div[id] {
-  margin-top: 0 !important;
 }
