@@ -5,6 +5,7 @@ import CustomCursor from "@/components/ui/CustomCursor";
 import PageLoader from "@/components/ui/PageLoader";
 import GlobalScene from "@/components/three/GlobalScene";
 import ScrollWatcher from "@/components/three/ScrollWatcher";
+import { getSettings, getProfile } from "@/lib/api";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,62 +19,83 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Mayank Choudhary — AI & Full Stack Developer",
-    template: "%s | Mayank Choudhary",
-  },
-  description:
-    "Senior Full Stack & AI Developer specializing in building intelligent, scalable systems. Expert in React, Next.js, NestJS, Python, and cutting-edge AI technologies.",
-  keywords: [
-    "Mayank Choudhary",
-    "Full Stack Developer",
-    "AI Developer",
-    "React Developer",
-    "Next.js",
-    "NestJS",
-    "Machine Learning",
-    "LangChain",
-    "OpenAI",
-    "Portfolio",
-  ],
-  authors: [{ name: "Mayank Choudhary" }],
-  creator: "Mayank Choudhary",
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    title: "Mayank Choudhary — AI & Full Stack Developer",
-    description:
-      "Senior Full Stack & AI Developer building intelligent, scalable systems.",
-    siteName: "Mayank Choudhary Portfolio",
-    images: [
-      {
-        url: "/profile.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Mayank Choudhary Portfolio",
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const [settings, profile] = await Promise.allSettled([
+      getSettings(),
+      getProfile(),
+    ]);
+
+    const s = settings.status === "fulfilled" ? settings.value : null;
+    const p = profile.status === "fulfilled" ? profile.value : null;
+
+    const title =
+      s?.seoTitle ||
+      `${p?.name || "Mayank Choudhary"} — AI & Full Stack Developer`;
+    const description =
+      s?.seoDescription ||
+      "Senior Full Stack & AI Developer specializing in building intelligent, scalable systems.";
+    const name = p?.name || s?.portfolioName || "Mayank Choudhary";
+
+    return {
+      title: {
+        default: title,
+        template: `%s | ${name}`,
       },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Mayank Choudhary — AI & Full Stack Developer",
-    description:
-      "Senior Full Stack & AI Developer building intelligent, scalable systems.",
-    images: ["/profile.jpg"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-};
+      description,
+      keywords: [
+        name,
+        "Full Stack Developer",
+        "AI Developer",
+        "React Developer",
+        "Next.js",
+        "NestJS",
+        "Machine Learning",
+        "Portfolio",
+      ],
+      authors: [{ name }],
+      creator: name,
+      openGraph: {
+        type: "website",
+        locale: "en_US",
+        title,
+        description,
+        siteName: `${name} Portfolio`,
+        images: [
+          {
+            url: p?.profileImage || "/profile.jpg",
+            width: 1200,
+            height: 630,
+            alt: `${name} Portfolio`,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [p?.profileImage || "/profile.jpg"],
+      },
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          "max-video-preview": -1,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+        },
+      },
+    };
+  } catch {
+    return {
+      title: "Mayank Choudhary — AI & Full Stack Developer",
+      description:
+        "Senior Full Stack & AI Developer building intelligent, scalable systems.",
+    };
+  }
+}
 
 export const viewport: Viewport = {
   themeColor: "#020617",
@@ -83,27 +105,43 @@ export const viewport: Viewport = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        {/*
+          This inline script runs SYNCHRONOUSLY before any HTML
+          is painted — before React hydrates, before useEffect,
+          before the browser can restore scroll position.
+          It disables scroll restoration and forces the page to
+          start at the very top on every load/reload.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  if ('scrollRestoration' in history) {
+                    history.scrollRestoration = 'manual';
+                  }
+                  window.scrollTo(0, 0);
+                  document.documentElement.scrollTop = 0;
+                  document.body && (document.body.scrollTop = 0);
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-[#020617] text-white overflow-x-hidden">
-        {/* ── Layer 0: Fixed fullscreen 3D scene ── */}
         <GlobalScene />
-
-        {/* ── Scroll + mouse watcher ── */}
         <ScrollWatcher />
-
-        {/* ── UI overlays ── */}
         <PageLoader />
         <CustomCursor />
-
-        {/* ── HTML content scrolls over scene ── */}
         {children}
       </body>
     </html>
