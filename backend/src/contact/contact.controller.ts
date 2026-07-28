@@ -8,50 +8,52 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-
 import { ContactService } from './contact.service';
-import { CreateContactDto } from './dto/create-contact.dto';
-import { UpdateContactDto } from './dto/update-contact.dto';
-import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
+import { SseService }     from '../sse/sse.service';
+import { JwtAuthGuard }   from '../auth/jwt/jwt-auth.guard';
 
 @Controller('contact')
 export class ContactController {
-  constructor(private readonly contactService: ContactService) {}
+  constructor(
+    private readonly contactService: ContactService,
+    private readonly sseService: SseService,
+  ) {}
 
-  // Public - Portfolio contact form
+  // Public — no JWT guard (contact form submission)
   @Post()
-  create(@Body() dto: CreateContactDto) {
-    return this.contactService.create(dto);
+  async create(
+    @Body() body: { name: string; email: string; subject: string; message: string },
+  ) {
+    const result = await this.contactService.create(body);
+    this.sseService.emit('contacts', 'created');
+    return result;
   }
 
-  // Admin
   @UseGuards(JwtAuthGuard)
   @Get()
   findAll() {
     return this.contactService.findAll();
   }
 
-  // Admin
   @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.contactService.findOne(id);
   }
 
-  // Admin
   @UseGuards(JwtAuthGuard)
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateContactDto,
-  ) {
-    return this.contactService.update(id, dto);
+  @Patch(':id/read')
+  async markRead(@Param('id') id: string) {
+    const result = await this.contactService.markRead(id);
+    this.sseService.emit('contacts', 'updated');
+    return result;
   }
 
-  // Admin
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.contactService.remove(id);
+  async remove(@Param('id') id: string) {
+    const result = await this.contactService.remove(id);
+    this.sseService.emit('contacts', 'deleted');
+    return result;
   }
 }
