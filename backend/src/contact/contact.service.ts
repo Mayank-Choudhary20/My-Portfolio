@@ -1,42 +1,43 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateContactDto } from './dto/create-contact.dto';
-import { UpdateContactDto } from './dto/update-contact.dto';
 
 @Injectable()
 export class ContactService {
   constructor(private prisma: PrismaService) {}
 
-  create(dto: CreateContactDto) {
-    return this.prisma.contact.create({
-      data: dto,
-    });
+  async create(data: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }) {
+    return this.prisma.contact.create({ data });
   }
 
-  findAll() {
+  async findAll() {
     return this.prisma.contact.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
-  findOne(id: string) {
-    return this.prisma.contact.findUnique({
-      where: { id },
-    });
+  async findOne(id: string) {
+    const contact = await this.prisma.contact.findUnique({ where: { id } });
+    if (!contact) throw new NotFoundException('Contact not found');
+    return contact;
   }
 
-  update(id: string, dto: UpdateContactDto) {
+  async markRead(id: string) {
+    const contact = await this.prisma.contact.findUnique({ where: { id } });
+    if (!contact) throw new NotFoundException('Contact not found');
     return this.prisma.contact.update({
       where: { id },
-      data: dto,
+      data: { isRead: true },
     });
   }
 
-  remove(id: string) {
-    return this.prisma.contact.delete({
-      where: { id },
-    });
+  async remove(id: string) {
+    const contact = await this.prisma.contact.findUnique({ where: { id } });
+    if (!contact) throw new NotFoundException('Contact not found');
+    return this.prisma.contact.delete({ where: { id } });
   }
 }
