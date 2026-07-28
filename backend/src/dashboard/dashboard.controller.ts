@@ -7,8 +7,14 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @UseGuards(JwtAuthGuard)
+  @Get('stats')
+  getStats() {
+    return this.dashboardService.getStats();
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get()
   getDashboard() {
-    return this.dashboardService.getDashboard();
+    return this.dashboardService.getStats();
   }
 }
