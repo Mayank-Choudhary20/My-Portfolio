@@ -198,19 +198,20 @@ export const showcaseApi = {
 };
 
 // ─── Resume ───────────────────────────────────────────────────────────────────
+// ─── Resume ───────────────────────────────────────────────────────────────────
 export const resumeApi = {
   get: () => apiFetch<import("@/types").Resume>("/resume"),
-  create: (data: { title: string; fileUrl: string }) =>
+  create: (data: { title: string; fileUrl: string; thumbnailUrl?: string | null }) =>
     apiFetch<import("@/types").Resume>("/resume", {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  update: (id: string, data: { title?: string; fileUrl?: string }) =>
+  update: (id: string, data: { title?: string; fileUrl?: string; thumbnailUrl?: string | null }) =>
     apiFetch<import("@/types").Resume>(`/resume/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
-  updateByPut: (data: { title?: string; fileUrl?: string }) =>
+  updateByPut: (data: { title?: string; fileUrl?: string; thumbnailUrl?: string | null }) =>
     apiFetch<import("@/types").Resume>("/resume", {
       method: "PUT",
       body: JSON.stringify(data),
