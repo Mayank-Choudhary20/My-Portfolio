@@ -8,10 +8,10 @@ export function useQuery<T>(
   apiFn: () => Promise<T>,
   deps: unknown[] = []
 ) {
-  const [data, setData] = useState<T | null>(null);
+  const [data, setData]       = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const mountedRef = useRef(true);
+  const [error, setError]     = useState<Error | null>(null);
+  const mountedRef            = useRef(true);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -40,23 +40,24 @@ export function useQuery<T>(
 
 // ─── useApi — mutation helper ─────────────────────────────────────────────────
 interface UseApiOptions<T> {
-  onSuccess?: (data: T) => void;
-  onError?: (error: Error) => void;
+  onSuccess?:      (data: T) => void;
+  onError?:        (error: Error) => void;
   successMessage?: string;
-  errorMessage?: string;
+  errorMessage?:   string;
 }
 
-export function useApi<T>(
-  apiFn: (...args: unknown[]) => Promise<T>,
+// ↓ TArgs captures the exact argument tuple of whatever function is passed in
+export function useApi<T, TArgs extends unknown[]>(
+  apiFn: (...args: TArgs) => Promise<T>,
   options: UseApiOptions<T> = {}
 ) {
-  const [data, setData] = useState<T | null>(null);
+  const [data, setData]       = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const { addToast } = useToastStore();
+  const [error, setError]     = useState<Error | null>(null);
+  const { addToast }          = useToastStore();
 
   const execute = useCallback(
-    async (...args: unknown[]) => {
+    async (...args: TArgs): Promise<T> => {
       setLoading(true);
       setError(null);
       try {
@@ -68,15 +69,14 @@ export function useApi<T>(
         options.onSuccess?.(result);
         return result;
       } catch (err) {
-        const error =
-          err instanceof Error ? err : new Error("Unknown error");
-        setError(error);
+        const e = err instanceof Error ? err : new Error("Unknown error");
+        setError(e);
         addToast({
-          type: "error",
-          title: options.errorMessage || error.message,
+          type:  "error",
+          title: options.errorMessage || e.message,
         });
-        options.onError?.(error);
-        throw error;
+        options.onError?.(e);
+        throw e;
       } finally {
         setLoading(false);
       }
