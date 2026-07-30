@@ -176,14 +176,14 @@ export default function DashboardPage() {
                   <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 8px rgba(34,197,94,0.5)" }} />
                   <span style={{ fontSize: "12px", fontWeight: 600, color: "#4ade80" }}>Portfolio Live</span>
                 </div>
-                <a href="http://localhost:3000" target="_blank" rel="noreferrer" style={{ color: "rgba(255,255,255,0.2)", display: "flex" }}><ExternalLink size={12} /></a>
+                <a href="my-portfolio-admin-uw-e-services.vercel.app" target="_blank" rel="noreferrer" style={{ color: "rgba(255,255,255,0.2)", display: "flex" }}><ExternalLink size={12} /></a>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "rgba(255,255,255,0.3)" }} />
                   <span style={{ fontSize: "12px", fontWeight: 600, color: "rgba(255,255,255,0.35)" }}>Backend API</span>
                 </div>
-                <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.15)" }}>:4000</span>
+                <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.15)" }}>https://my-portfolio-backend-jsv6.onrender.com</span>
               </div>
               <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "10px" }}>
                 <p style={{ fontSize: "9px", fontWeight: 700, color: "rgba(255,255,255,0.15)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>Today</p>
