@@ -19,16 +19,25 @@ import {
   Mail,
   Sparkles,
   GitBranch,
+  LucideProps,
 } from "lucide-react";
 import type { Profile, Setting } from "@/types/portfolio";
 
 interface NavbarProps {
-  profile?: Profile | null;
-  settings?: Setting | null;
+  profile?:  Profile  | null;
+  settings?: Setting  | null;
 }
 
+// ── Lucide-specific icon type ─────────────────────────────────
+// React.ElementType is too broad — TypeScript infers 'size' as
+// 'never' because it tries to intersect all possible component
+// prop types. This precise type resolves that completely.
+type LucideIcon = React.ForwardRefExoticComponent<
+  Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+>;
+
 // ── Section icons ─────────────────────────────────────────────
-const SECTION_ICONS: Record<string, React.ElementType> = {
+const SECTION_ICONS: Record<string, LucideIcon> = {
   "#about":           User,
   "#education":       BookOpen,
   "#experience":      Briefcase,
@@ -45,15 +54,15 @@ const SECTION_ICONS: Record<string, React.ElementType> = {
 // ── Nav structure ─────────────────────────────────────────────
 interface NavChild {
   label: string;
-  href: string;
-  desc: string;
+  href:  string;
+  desc:  string;
 }
 
 interface NavGroupDef {
-  id: string;
-  label: string;
-  href: string;
-  icon: React.ElementType;
+  id:       string;
+  label:    string;
+  href:     string;
+  icon:     LucideIcon;
   children: NavChild[];
 }
 
@@ -64,9 +73,9 @@ const NAV_GROUPS: NavGroupDef[] = [
     href:  "#about",
     icon:  User,
     children: [
-      { label: "About Me",   href: "#about",      desc: "Who I am"           },
-      { label: "Education",  href: "#education",   desc: "Academic background" },
-      { label: "Experience", href: "#experience",  desc: "Work history"        },
+      { label: "About Me",   href: "#about",     desc: "Who I am"            },
+      { label: "Education",  href: "#education",  desc: "Academic background" },
+      { label: "Experience", href: "#experience", desc: "Work history"        },
     ],
   },
   {
@@ -113,7 +122,7 @@ const NAV_GROUPS: NavGroupDef[] = [
   },
 ];
 
-// Section → Group ID (explicit mapping)
+// Section → Group ID
 const SECTION_TO_GROUP: Record<string, string> = {
   "hero":            "",
   "about":           "about",
@@ -129,7 +138,7 @@ const SECTION_TO_GROUP: Record<string, string> = {
   "contact":         "contact",
 };
 
-// Sections in EXACT page order (must match page.tsx)
+// Sections in EXACT page order
 const PAGE_SECTIONS = [
   "hero",
   "about",
@@ -146,7 +155,7 @@ const PAGE_SECTIONS = [
 ];
 
 // Mobile flat links
-const MOBILE_LINKS = [
+const MOBILE_LINKS: { label: string; href: string; icon: LucideIcon }[] = [
   { label: "About Me",        href: "#about",           icon: User       },
   { label: "Education",       href: "#education",       icon: BookOpen   },
   { label: "Experience",      href: "#experience",      icon: Briefcase  },
@@ -160,21 +169,17 @@ const MOBILE_LINKS = [
   { label: "Contact",         href: "#contact",         icon: Mail       },
 ];
 
-// ── Detect active section from scroll position ────────────────
+// ── Detect active section ─────────────────────────────────────
 function detectActiveSection(): string {
-  const scrollY = window.scrollY;
-  const viewportH = window.innerHeight;
+  const scrollY      = window.scrollY;
+  const viewportH    = window.innerHeight;
   const detectionLine = scrollY + viewportH * 0.3;
-
-  let bestId = "hero";
+  let bestId         = "hero";
 
   for (const id of PAGE_SECTIONS) {
     const el = document.getElementById(id);
     if (!el) continue;
-
-    const elTop = el.offsetTop;
-
-    if (elTop <= detectionLine) {
+    if (el.offsetTop <= detectionLine) {
       bestId = id;
     } else {
       break;
@@ -195,16 +200,16 @@ function DropdownPanel({
   onNavigate,
   onClose,
 }: {
-  group: NavGroupDef;
+  group:         NavGroupDef;
   activeSection: string;
-  onNavigate: (href: string) => void;
-  onClose: () => void;
+  onNavigate:    (href: string) => void;
+  onClose:       () => void;
 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1  }}
+      exit={{   opacity: 0, y: 8, scale: 0.96 }}
       transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
       className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-[60]"
       style={{ minWidth: "210px" }}
@@ -213,7 +218,7 @@ function DropdownPanel({
         className="rounded-2xl overflow-hidden p-1.5"
         style={{
           background: "rgba(6,10,24,0.98)",
-          border: "1px solid rgba(255,255,255,0.09)",
+          border:     "1px solid rgba(255,255,255,0.09)",
           boxShadow:
             "0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,229,255,0.05), inset 0 1px 0 rgba(255,255,255,0.04)",
           backdropFilter: "blur(32px)",
@@ -222,17 +227,19 @@ function DropdownPanel({
         {group.children.map((child, i) => {
           const childId  = child.href.replace("#", "");
           const isActive = activeSection === childId;
-          const Icon     = SECTION_ICONS[child.href] ?? Sparkles;
+
+          // Extract to capitalized const — this is the fix.
+          // Using (SECTION_ICONS[child.href] ?? Sparkles) inline keeps
+          // the type as LucideIcon | typeof Sparkles which TypeScript
+          // cannot narrow, causing size to be typed as never.
+          const Icon: LucideIcon = SECTION_ICONS[child.href] ?? Sparkles;
 
           return (
             <motion.button
               key={child.href}
-              onClick={() => {
-                onClose();
-                onNavigate(child.href);
-              }}
+              onClick={() => { onClose(); onNavigate(child.href); }}
               initial={{ opacity: 0, x: -6 }}
-              animate={{ opacity: 1, x: 0 }}
+              animate={{ opacity: 1, x: 0  }}
               transition={{ delay: i * 0.04, duration: 0.18 }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left"
               style={{
@@ -258,7 +265,10 @@ function DropdownPanel({
                   transition: "all 0.15s ease",
                 }}
               >
-                <Icon size={13} style={{ color: isActive ? "#00e5ff" : "#64748b" }} />
+                <Icon
+                  size={13}
+                  style={{ color: isActive ? "#00e5ff" : "#64748b" }}
+                />
               </div>
 
               <div className="flex-1 min-w-0">
@@ -295,15 +305,15 @@ function NavGroupButton({
   onNavigate,
   variant = "default",
 }: {
-  group: NavGroupDef;
+  group:         NavGroupDef;
   isGroupActive: boolean;
   activeSection: string;
-  onNavigate: (href: string) => void;
-  variant?: "default" | "resume" | "ai" | "contact";
+  onNavigate:    (href: string) => void;
+  variant?:      "default" | "resume" | "ai" | "contact";
 }) {
-  const [open, setOpen] = useState(false);
-  const hasChildren     = group.children.length > 0;
-  const closeTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [open, setOpen]   = useState(false);
+  const hasChildren       = group.children.length > 0;
+  const closeTimer        = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelClose = () => {
     if (closeTimer.current) {
@@ -319,85 +329,71 @@ function NavGroupButton({
 
   useEffect(() => () => cancelClose(), []);
 
-  // ── Variant styles ────────────────────────────────────────
   const getVariantStyle = () => {
     if (variant === "resume") {
       return {
         base: "relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap select-none outline-none transition-all duration-150",
         idle: {
-          color: isGroupActive ? "#ffffff" : "#e2e8f0",
+          color:      isGroupActive ? "#ffffff" : "#e2e8f0",
           background: isGroupActive
             ? "linear-gradient(135deg, rgba(0,229,255,0.15), rgba(59,130,246,0.1))"
             : "rgba(255,255,255,0.06)",
-          border: isGroupActive
+          border:    isGroupActive
             ? "1px solid rgba(0,229,255,0.3)"
             : "1px solid rgba(255,255,255,0.1)",
           boxShadow: isGroupActive ? "0 0 12px rgba(0,229,255,0.1)" : "none",
         },
       };
     }
-
     if (variant === "ai") {
       return {
         base: "relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap select-none outline-none transition-all duration-150",
         idle: {
-          color: isGroupActive ? "#ffffff" : "#e2e8f0",
+          color:      isGroupActive ? "#ffffff" : "#e2e8f0",
           background: isGroupActive
             ? "linear-gradient(135deg, rgba(124,58,237,0.2), rgba(59,130,246,0.12))"
             : "rgba(124,58,237,0.08)",
-          border: isGroupActive
+          border:    isGroupActive
             ? "1px solid rgba(124,58,237,0.4)"
             : "1px solid rgba(124,58,237,0.18)",
           boxShadow: isGroupActive ? "0 0 12px rgba(124,58,237,0.15)" : "none",
         },
       };
     }
-
     if (variant === "contact") {
       return {
         base: "relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap select-none outline-none transition-all duration-150",
         idle: {
-          color: "#020617",
-          background: isGroupActive
-            ? "linear-gradient(135deg, #00e5ff, #3b82f6)"
-            : "linear-gradient(135deg, #00e5ff, #3b82f6)",
-          border: "1px solid transparent",
-          boxShadow: isGroupActive
+          color:      "#020617",
+          background: "linear-gradient(135deg, #00e5ff, #3b82f6)",
+          border:     "1px solid transparent",
+          boxShadow:  isGroupActive
             ? "0 0 20px rgba(0,229,255,0.4)"
             : "0 0 12px rgba(0,229,255,0.25)",
         },
       };
     }
-
-    // default (grouped items: About, Work, Skills)
+    // default
     return {
       base: "relative flex items-center gap-1 px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap select-none outline-none",
-      idle: {
-        color: isGroupActive ? "#ffffff" : "#94a3b8",
-      },
+      idle: { color: isGroupActive ? "#ffffff" : "#94a3b8" },
     };
   };
 
   const variantStyle = getVariantStyle();
+
+  // Extract icon to capitalized const — required for TypeScript to
+  // accept size prop without typing it as never
   const Icon = group.icon;
 
   return (
     <div
       className="relative"
-      onMouseEnter={() => {
-        cancelClose();
-        if (hasChildren) setOpen(true);
-      }}
+      onMouseEnter={() => { cancelClose(); if (hasChildren) setOpen(true); }}
       onMouseLeave={scheduleClose}
     >
       <motion.button
-        onClick={() => {
-          if (!hasChildren) {
-            onNavigate(group.href);
-          } else {
-            onNavigate(group.href);
-          }
-        }}
+        onClick={() => onNavigate(group.href)}
         className={variantStyle.base}
         style={variantStyle.idle}
         whileHover={
@@ -412,7 +408,7 @@ function NavGroupButton({
         whileTap={{ scale: 0.97 }}
         transition={{ duration: 0.12 }}
       >
-        {/* Active pill — only for default grouped items */}
+        {/* Active pill — default grouped items only */}
         {variant === "default" && (
           <AnimatePresence>
             {isGroupActive && (
@@ -420,13 +416,13 @@ function NavGroupButton({
                 key={`pill-${group.id}`}
                 className="absolute inset-0 rounded-xl pointer-events-none"
                 initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1   }}
+                exit={{   opacity: 0, scale: 0.9  }}
                 transition={{ duration: 0.2 }}
                 style={{
                   background:
                     "linear-gradient(135deg,rgba(0,229,255,0.13),rgba(59,130,246,0.08))",
-                  border: "1px solid rgba(0,229,255,0.22)",
+                  border:    "1px solid rgba(0,229,255,0.22)",
                   boxShadow: "0 0 14px rgba(0,229,255,0.07)",
                 }}
               />
@@ -435,7 +431,7 @@ function NavGroupButton({
         )}
 
         <span className="relative z-10 flex items-center gap-1.5">
-          {/* Show icon for standalone items */}
+          {/* Icon only for standalone variants */}
           {variant !== "default" && (
             <Icon
               size={13}
@@ -444,12 +440,8 @@ function NavGroupButton({
                   variant === "contact"
                     ? "#020617"
                     : variant === "ai"
-                    ? isGroupActive
-                      ? "#a78bfa"
-                      : "#8b5cf6"
-                    : isGroupActive
-                    ? "#00e5ff"
-                    : "#94a3b8",
+                    ? isGroupActive ? "#a78bfa" : "#8b5cf6"
+                    : isGroupActive ? "#00e5ff"  : "#94a3b8",
               }}
             />
           )}
@@ -505,14 +497,13 @@ export default function Navbar({ profile, settings }: NavbarProps) {
   const portfolioName =
     settings?.portfolioName || profile?.name || "Mayank Choudhary";
   const isAvailable = profile?.available ?? true;
-  const nameFirst   = portfolioName.split(" ")[0] ?? "";
+  const nameFirst   = portfolioName.split(" ")[0]          ?? "";
   const nameLast    = portfolioName.split(" ").slice(1).join(" ");
 
   // ── Scroll tracking ────────────────────────────────────────
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 24);
-    const detected = detectActiveSection();
-    setActiveSection(detected);
+    setActiveSection(detectActiveSection());
   }, []);
 
   useEffect(() => {
@@ -520,19 +511,15 @@ export default function Navbar({ profile, settings }: NavbarProps) {
     const onScroll = () => {
       if (!ticking) {
         ticking = true;
-        requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-        });
+        requestAnimationFrame(() => { handleScroll(); ticking = false; });
       }
     };
-
     window.addEventListener("scroll", onScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, [handleScroll]);
 
-  // ── Body lock ──────────────────────────────────────────────
+  // ── Body scroll lock ───────────────────────────────────────
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -555,12 +542,10 @@ export default function Navbar({ profile, settings }: NavbarProps) {
     [mobileOpen]
   );
 
-  const activeGroupId = SECTION_TO_GROUP[activeSection] ?? "";
-
+  const activeGroupId  = SECTION_TO_GROUP[activeSection] ?? "";
   const groupedNavs    = NAV_GROUPS.filter((g) => g.children.length > 0);
   const standaloneNavs = NAV_GROUPS.filter((g) => g.children.length === 0);
 
-  // Map standalone IDs to their visual variant
   const standaloneVariantMap: Record<string, "resume" | "ai" | "contact"> = {
     resume:  "resume",
     ai:      "ai",
@@ -574,17 +559,17 @@ export default function Navbar({ profile, settings }: NavbarProps) {
       ══════════════════════════════════ */}
       <motion.nav
         initial={{ y: -80, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+        animate={{ y: 0,   opacity: 1 }}
         transition={{ duration: 0.55, ease: [0.23, 1, 0.32, 1], delay: 2.2 }}
         className="fixed top-0 left-0 right-0 z-50"
         style={{
-          padding: scrolled ? "8px 0" : "16px 0",
-          background: scrolled ? "rgba(2,6,23,0.94)" : "transparent",
+          padding:        scrolled ? "8px 0" : "16px 0",
+          background:     scrolled ? "rgba(2,6,23,0.94)" : "transparent",
           backdropFilter: scrolled ? "blur(24px) saturate(180%)" : "none",
-          borderBottom: scrolled
+          borderBottom:   scrolled
             ? "1px solid rgba(255,255,255,0.06)"
             : "1px solid transparent",
-          boxShadow: scrolled ? "0 2px 40px rgba(0,0,0,0.6)" : "none",
+          boxShadow:  scrolled ? "0 2px 40px rgba(0,0,0,0.6)" : "none",
           transition:
             "padding 0.3s ease, background 0.3s ease, backdrop-filter 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease",
         }}
@@ -616,9 +601,9 @@ export default function Navbar({ profile, settings }: NavbarProps) {
                 <div
                   className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2"
                   style={{
-                    background: isAvailable ? "#10b981" : "#ef4444",
+                    background:  isAvailable ? "#10b981"  : "#ef4444",
                     borderColor: "#020617",
-                    boxShadow: isAvailable
+                    boxShadow:   isAvailable
                       ? "0 0 6px rgba(16,185,129,0.8)"
                       : "0 0 6px rgba(239,68,68,0.8)",
                   }}
@@ -640,7 +625,7 @@ export default function Navbar({ profile, settings }: NavbarProps) {
               className="hidden lg:flex items-center gap-3"
               aria-label="Desktop navigation"
             >
-              {/* Grouped items: About ▾  Work ▾  Skills ▾ */}
+              {/* Grouped: About ▾  Work ▾  Skills ▾ */}
               <div className="flex items-center gap-1">
                 {groupedNavs.map((group) => (
                   <NavGroupButton
@@ -654,10 +639,9 @@ export default function Navbar({ profile, settings }: NavbarProps) {
                 ))}
               </div>
 
-              {/* Divider */}
               <NavSeparator />
 
-              {/* Standalone items: Resume  Ask AI  Contact */}
+              {/* Standalone: Resume  Ask AI  Contact */}
               <div className="flex items-center gap-2">
                 {standaloneNavs.map((group) => (
                   <NavGroupButton
@@ -672,7 +656,7 @@ export default function Navbar({ profile, settings }: NavbarProps) {
               </div>
             </nav>
 
-            {/* ── Right ── */}
+            {/* ── Right side ── */}
             <div className="flex items-center gap-2.5 flex-shrink-0">
 
               {/* Availability badge */}
@@ -687,7 +671,7 @@ export default function Navbar({ profile, settings }: NavbarProps) {
                     : "1px solid rgba(239,68,68,0.22)",
                 }}
                 initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
+                animate={{ opacity: 1, x: 0  }}
                 transition={{ delay: 2.8, duration: 0.4 }}
               >
                 <motion.span
@@ -721,13 +705,13 @@ export default function Navbar({ profile, settings }: NavbarProps) {
                 className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center"
                 style={{
                   background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.09)",
-                  color: "#94a3b8",
+                  border:     "1px solid rgba(255,255,255,0.09)",
+                  color:      "#94a3b8",
                 }}
                 onClick={() => setMobileOpen((v) => !v)}
                 whileHover={{
                   background: "rgba(255,255,255,0.09)",
-                  color: "#ffffff",
+                  color:      "#ffffff",
                 }}
                 whileTap={{ scale: 0.9 }}
                 aria-label={mobileOpen ? "Close menu" : "Open menu"}
@@ -735,19 +719,25 @@ export default function Navbar({ profile, settings }: NavbarProps) {
               >
                 <AnimatePresence mode="wait">
                   {mobileOpen ? (
-                    <motion.span key="x"
+                    <motion.span
+                      key="x"
                       initial={{ rotate: -90, opacity: 0 }}
                       animate={{ rotate: 0,   opacity: 1 }}
                       exit={{   rotate:  90,  opacity: 0 }}
                       transition={{ duration: 0.16 }}
-                    ><X size={17} /></motion.span>
+                    >
+                      <X size={17} />
+                    </motion.span>
                   ) : (
-                    <motion.span key="m"
+                    <motion.span
+                      key="m"
                       initial={{ rotate:  90, opacity: 0 }}
                       animate={{ rotate:  0,  opacity: 1 }}
                       exit={{   rotate: -90,  opacity: 0 }}
                       transition={{ duration: 0.16 }}
-                    ><Menu size={17} /></motion.span>
+                    >
+                      <Menu size={17} />
+                    </motion.span>
                   )}
                 </AnimatePresence>
               </motion.button>
@@ -762,28 +752,39 @@ export default function Navbar({ profile, settings }: NavbarProps) {
       <AnimatePresence>
         {mobileOpen && (
           <>
+            {/* Backdrop */}
             <motion.div
               key="mob-bg"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              exit={{   opacity: 0 }}
               transition={{ duration: 0.2 }}
               className="fixed inset-0 z-40 lg:hidden"
-              style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
+              style={{
+                background:     "rgba(0,0,0,0.75)",
+                backdropFilter: "blur(6px)",
+              }}
               onClick={() => setMobileOpen(false)}
               aria-hidden="true"
             />
+
+            {/* Panel */}
             <motion.div
               key="mob-panel"
               initial={{ x: "100%", opacity: 0.6 }}
               animate={{ x: 0,      opacity: 1   }}
-              exit={{    x: "100%", opacity: 0   }}
-              transition={{ type: "spring", damping: 30, stiffness: 300, opacity: { duration: 0.2 } }}
+              exit={{   x: "100%", opacity: 0    }}
+              transition={{
+                type:    "spring",
+                damping: 30,
+                stiffness: 300,
+                opacity: { duration: 0.2 },
+              }}
               className="fixed top-0 right-0 bottom-0 z-50 flex flex-col lg:hidden"
               style={{
-                width: "min(300px, 88vw)",
-                background: "rgba(5,8,20,0.99)",
-                borderLeft: "1px solid rgba(255,255,255,0.07)",
+                width:          "min(300px, 88vw)",
+                background:     "rgba(5,8,20,0.99)",
+                borderLeft:     "1px solid rgba(255,255,255,0.07)",
                 backdropFilter: "blur(40px)",
               }}
               role="dialog"
@@ -800,7 +801,7 @@ export default function Navbar({ profile, settings }: NavbarProps) {
                     className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-white text-sm"
                     style={{
                       background: "linear-gradient(135deg, #00e5ff, #3b82f6, #7c3aed)",
-                      boxShadow: "0 0 14px rgba(0,229,255,0.3)",
+                      boxShadow:  "0 0 14px rgba(0,229,255,0.3)",
                     }}
                   >
                     {nameFirst[0] || "M"}
@@ -818,9 +819,14 @@ export default function Navbar({ profile, settings }: NavbarProps) {
                 <button
                   onClick={() => setMobileOpen(false)}
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-white transition-colors"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border:     "1px solid rgba(255,255,255,0.08)",
+                  }}
                   aria-label="Close menu"
-                ><X size={14} /></button>
+                >
+                  <X size={14} />
+                </button>
               </div>
 
               {/* Availability */}
@@ -828,8 +834,12 @@ export default function Navbar({ profile, settings }: NavbarProps) {
                 <div
                   className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl"
                   style={{
-                    background: isAvailable ? "rgba(16,185,129,0.07)" : "rgba(239,68,68,0.07)",
-                    border: isAvailable ? "1px solid rgba(16,185,129,0.18)" : "1px solid rgba(239,68,68,0.18)",
+                    background: isAvailable
+                      ? "rgba(16,185,129,0.07)"
+                      : "rgba(239,68,68,0.07)",
+                    border: isAvailable
+                      ? "1px solid rgba(16,185,129,0.18)"
+                      : "1px solid rgba(239,68,68,0.18)",
                   }}
                 >
                   <motion.span
@@ -838,34 +848,47 @@ export default function Navbar({ profile, settings }: NavbarProps) {
                     animate={{ scale: [1, 1.4, 1], opacity: [1, 0.7, 1] }}
                     transition={{ duration: 1.8, repeat: Infinity }}
                   />
-                  <span className="text-xs font-medium" style={{ color: isAvailable ? "#10b981" : "#ef4444" }}>
+                  <span
+                    className="text-xs font-medium"
+                    style={{ color: isAvailable ? "#10b981" : "#ef4444" }}
+                  >
                     {isAvailable ? "Open to opportunities" : "Currently occupied"}
                   </span>
                 </div>
               </div>
 
               {/* Links */}
-              <nav className="flex-1 px-3 py-3 overflow-y-auto" aria-label="Mobile navigation">
+              <nav
+                className="flex-1 px-3 py-3 overflow-y-auto"
+                aria-label="Mobile navigation"
+              >
                 <div className="px-3 pb-2 pt-1">
-                  <span className="text-[10px] text-slate-600 uppercase tracking-widest font-semibold">Navigate</span>
+                  <span className="text-[10px] text-slate-600 uppercase tracking-widest font-semibold">
+                    Navigate
+                  </span>
                 </div>
+
                 {MOBILE_LINKS.map((link, i) => {
                   const sectionId = link.href.replace("#", "");
                   const isActive  = activeSection === sectionId;
-                  const Icon      = link.icon;
-
-                  // Special styling for Resume, Ask AI, Contact in mobile
                   const isResume  = link.href === "#resume";
                   const isAI      = link.href === "#ai";
                   const isContact = link.href === "#contact";
                   const isSpecial = isResume || isAI || isContact;
+
+                  // Extract to capitalized const — same fix as above
+                  const Icon = link.icon;
 
                   return (
                     <motion.button
                       key={link.href}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0  }}
-                      transition={{ delay: i * 0.03, duration: 0.22, ease: "easeOut" }}
+                      transition={{
+                        delay:    i * 0.03,
+                        duration: 0.22,
+                        ease:     "easeOut",
+                      }}
                       onClick={() => navigate(link.href)}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 text-left"
                       style={{
@@ -875,7 +898,7 @@ export default function Navbar({ profile, settings }: NavbarProps) {
                             : isAI
                             ? "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(59,130,246,0.08))"
                             : "linear-gradient(135deg,rgba(0,229,255,0.1),rgba(59,130,246,0.06))"
-                          : isSpecial && !isActive
+                          : isSpecial
                           ? isContact
                             ? "rgba(0,229,255,0.04)"
                             : isAI
@@ -950,6 +973,7 @@ export default function Navbar({ profile, settings }: NavbarProps) {
                           }}
                         />
                       </div>
+
                       <span
                         className="text-sm font-medium flex-1"
                         style={{
@@ -962,15 +986,13 @@ export default function Navbar({ profile, settings }: NavbarProps) {
                       >
                         {link.label}
                       </span>
+
                       {isActive && (
                         <motion.span
                           className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                           style={{
-                            background: isContact
-                              ? "#00e5ff"
-                              : isAI
-                              ? "#a78bfa"
-                              : "#00e5ff",
+                            background:
+                              isContact ? "#00e5ff" : isAI ? "#a78bfa" : "#00e5ff",
                           }}
                           layoutId="mob-dot"
                           transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
@@ -991,7 +1013,8 @@ export default function Navbar({ profile, settings }: NavbarProps) {
                     © {new Date().getFullYear()} {nameFirst} {nameLast}
                   </div>
                   <div className="flex items-center gap-1 text-[10px] text-slate-700">
-                    <Sparkles size={9} />Portfolio
+                    <Sparkles size={9} />
+                    Portfolio
                   </div>
                 </div>
               </div>
