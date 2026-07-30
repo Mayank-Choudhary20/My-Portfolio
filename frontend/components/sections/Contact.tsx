@@ -13,8 +13,10 @@ import {
   Phone,
   Clock,
   ExternalLink,
+  LucideProps,
 } from "lucide-react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
+import type { IconType } from "react-icons";
 import SectionTitle from "@/components/ui/SectionTitle";
 import type { Profile } from "@/types/portfolio";
 
@@ -23,74 +25,78 @@ interface ContactProps {
 }
 
 interface FormData {
-  name: string;
-  email: string;
+  name:    string;
+  email:   string;
   subject: string;
   message: string;
 }
 
 type FormStatus = "idle" | "loading" | "success" | "error";
 
-/* ─── Input style helper ──────────────────────────────────── */
+// ── Precise icon types ────────────────────────────────────────
+// LucideIcon for lucide-react icons (has size prop)
+// IconType  for react-icons         (has size prop via IconType)
+type LucideIcon = React.ForwardRefExoticComponent<
+  Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+>;
+
+// ── Input style helpers ───────────────────────────────────────
 function inputStyle(hasError: boolean): React.CSSProperties {
   return {
-    width: "100%",
-    padding: "12px 16px",
+    width:        "100%",
+    padding:      "12px 16px",
     borderRadius: "12px",
-    fontSize: "14px",
-    color: "#e2e8f0",
-    background: "rgba(255,255,255,0.04)",
-    border: `1px solid ${hasError ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.08)"}`,
-    outline: "none",
-    transition: "border-color 0.2s ease",
+    fontSize:     "14px",
+    color:        "#e2e8f0",
+    background:   "rgba(255,255,255,0.04)",
+    border:       `1px solid ${hasError ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.08)"}`,
+    outline:      "none",
+    transition:   "border-color 0.2s ease",
   };
 }
 
 function inputWithIconStyle(hasError: boolean): React.CSSProperties {
-  return {
-    ...inputStyle(hasError),
-    paddingLeft: "40px",
-  };
+  return { ...inputStyle(hasError), paddingLeft: "40px" };
 }
 
-/* ─── Contact info row ────────────────────────────────────── */
+// ── Contact info row ──────────────────────────────────────────
+// FIXED: icon typed as LucideIcon instead of React.ElementType
 function ContactRow({
-  icon: Icon,
+  icon,
   label,
   value,
   href,
   color,
   delay,
 }: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  href?: string;
-  color: string;
-  delay: number;
+  icon:   LucideIcon;
+  label:  string;
+  value:  string;
+  href?:  string;
+  color:  string;
+  delay:  number;
 }) {
+  // Extract to capitalized const — required for TypeScript to
+  // accept size prop without typing it as never
+  const Icon = icon;
+
   const content = (
     <div className="flex items-center gap-4 w-full">
-      {/* Icon box — fixed size so icons are always aligned */}
       <div
         className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
         style={{
           background: "rgba(255,255,255,0.05)",
-          border: "1px solid rgba(255,255,255,0.09)",
+          border:     "1px solid rgba(255,255,255,0.09)",
         }}
       >
         <Icon size={17} className={color} />
       </div>
-
-      {/* Text */}
       <div className="flex-1 min-w-0">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 mb-0.5">
           {label}
         </p>
         <p className="text-sm font-medium text-slate-300 truncate">{value}</p>
       </div>
-
-      {/* Arrow for links */}
       {href && (
         <ExternalLink
           size={13}
@@ -114,19 +120,15 @@ function ContactRow({
           className="flex items-center rounded-xl p-3.5 transition-all duration-200"
           style={{
             background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.07)",
+            border:     "1px solid rgba(255,255,255,0.07)",
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.borderColor =
-              "rgba(0,229,255,0.2)";
-            (e.currentTarget as HTMLElement).style.background =
-              "rgba(0,229,255,0.04)";
+            (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,229,255,0.2)";
+            (e.currentTarget as HTMLElement).style.background  = "rgba(0,229,255,0.04)";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.borderColor =
-              "rgba(255,255,255,0.07)";
-            (e.currentTarget as HTMLElement).style.background =
-              "rgba(255,255,255,0.03)";
+            (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
+            (e.currentTarget as HTMLElement).style.background  = "rgba(255,255,255,0.03)";
           }}
         >
           {content}
@@ -136,7 +138,7 @@ function ContactRow({
           className="flex items-center rounded-xl p-3.5"
           style={{
             background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.07)",
+            border:     "1px solid rgba(255,255,255,0.07)",
           }}
         >
           {content}
@@ -146,24 +148,28 @@ function ContactRow({
   );
 }
 
-/* ─── Social button ───────────────────────────────────────── */
+// ── Social button ─────────────────────────────────────────────
+// FIXED: icon typed as IconType (react-icons) instead of React.ElementType
 function SocialBtn({
   href,
-  icon: Icon,
+  icon,
   label,
   hoverColor,
   hoverBorder,
   hoverBg,
   delay,
 }: {
-  href: string;
-  icon: React.ElementType;
-  label: string;
-  hoverColor: string;
+  href:        string;
+  icon:        IconType;
+  label:       string;
+  hoverColor:  string;
   hoverBorder: string;
-  hoverBg: string;
-  delay: number;
+  hoverBg:     string;
+  delay:       number;
 }) {
+  // Extract to capitalized const
+  const Icon = icon;
+
   return (
     <motion.a
       href={href}
@@ -176,21 +182,21 @@ function SocialBtn({
       className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-slate-400 text-sm font-medium transition-all duration-200"
       style={{
         background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border:     "1px solid rgba(255,255,255,0.08)",
       }}
       onMouseEnter={(e) => {
-        const el = e.currentTarget as HTMLElement;
-        el.style.color = hoverColor;
-        el.style.borderColor = hoverBorder;
-        el.style.background = hoverBg;
-        el.style.transform = "translateY(-3px)";
+        const el              = e.currentTarget as HTMLElement;
+        el.style.color        = hoverColor;
+        el.style.borderColor  = hoverBorder;
+        el.style.background   = hoverBg;
+        el.style.transform    = "translateY(-3px)";
       }}
       onMouseLeave={(e) => {
-        const el = e.currentTarget as HTMLElement;
-        el.style.color = "";
-        el.style.borderColor = "rgba(255,255,255,0.08)";
-        el.style.background = "rgba(255,255,255,0.04)";
-        el.style.transform = "";
+        const el              = e.currentTarget as HTMLElement;
+        el.style.color        = "";
+        el.style.borderColor  = "rgba(255,255,255,0.08)";
+        el.style.background   = "rgba(255,255,255,0.04)";
+        el.style.transform    = "";
       }}
     >
       <Icon size={16} />
@@ -199,21 +205,18 @@ function SocialBtn({
   );
 }
 
-/* ─── Main component ─────────────────────────────────────── */
+// ── Main component ────────────────────────────────────────────
 export default function Contact({ profile }: ContactProps) {
-  const [form, setForm] = useState<FormData>({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
+  const [form,   setForm  ] = useState<FormData>({
+    name: "", email: "", subject: "", message: "",
   });
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
   const validate = (): boolean => {
     const e: Partial<FormData> = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!form.email.trim()) e.email = "Email is required";
+    if (!form.name.trim())    e.name = "Name is required";
+    if (!form.email.trim())   e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       e.email = "Invalid email address";
     if (!form.subject.trim()) e.subject = "Subject is required";
@@ -232,9 +235,9 @@ export default function Contact({ profile }: ContactProps) {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/contact`,
         {
-          method: "POST",
+          method:  "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body:    JSON.stringify(form),
         }
       );
       if (!res.ok) throw new Error("Failed to send");
@@ -257,11 +260,14 @@ export default function Contact({ profile }: ContactProps) {
     }
   };
 
-  const focusBorder = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const focusBorder = (
+    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     e.target.style.borderColor = "rgba(0,229,255,0.4)";
   };
+
   const blurBorder = (
-    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e:     React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
     field: keyof FormData
   ) => {
     e.target.style.borderColor = errors[field]
@@ -271,27 +277,27 @@ export default function Contact({ profile }: ContactProps) {
 
   const contactRows = [
     {
-      icon: Mail,
+      icon:  Mail,
       label: "Email",
       value: profile?.email || "Get in touch",
-      href: profile?.email ? `mailto:${profile.email}` : undefined,
+      href:  profile?.email ? `mailto:${profile.email}` : undefined,
       color: "text-cyan-400",
     },
     {
-      icon: Phone,
+      icon:  Phone,
       label: "Phone",
       value: profile?.phone || "—",
-      href: profile?.phone ? `tel:${profile.phone}` : undefined,
+      href:  profile?.phone ? `tel:${profile.phone}` : undefined,
       color: "text-purple-400",
     },
     {
-      icon: MapPin,
+      icon:  MapPin,
       label: "Location",
       value: profile?.location || "India",
       color: "text-blue-400",
     },
     {
-      icon: Clock,
+      icon:  Clock,
       label: "Response Time",
       value: "Within 24 hours",
       color: "text-green-400",
@@ -303,7 +309,7 @@ export default function Contact({ profile }: ContactProps) {
       className="relative py-28 overflow-hidden"
       style={{ background: "#020617" }}
     >
-      {/* ── Background ── */}
+      {/* Background */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
         <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
@@ -312,8 +318,6 @@ export default function Contact({ profile }: ContactProps) {
       </div>
 
       <div className="relative section-container">
-
-        {/* ── Section title ── */}
         <SectionTitle
           label="Contact"
           title="Let's"
@@ -324,9 +328,7 @@ export default function Contact({ profile }: ContactProps) {
 
         <div className="grid lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
 
-          {/* ════════════════════════════════════
-              LEFT — Info column
-          ════════════════════════════════════ */}
+          {/* ── Left: Info ── */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -334,7 +336,6 @@ export default function Contact({ profile }: ContactProps) {
             transition={{ duration: 0.7 }}
             className="flex flex-col gap-7"
           >
-            {/* Intro text */}
             <div>
               <h3 className="text-2xl font-bold text-white mb-3">
                 Open to{" "}
@@ -347,7 +348,6 @@ export default function Contact({ profile }: ContactProps) {
               </p>
             </div>
 
-            {/* Contact info rows */}
             <div className="flex flex-col gap-3">
               {contactRows.map((row, i) => (
                 <ContactRow
@@ -362,7 +362,6 @@ export default function Contact({ profile }: ContactProps) {
               ))}
             </div>
 
-            {/* Social links */}
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 mb-3">
                 Find me on
@@ -393,7 +392,7 @@ export default function Contact({ profile }: ContactProps) {
                 {profile?.email && (
                   <SocialBtn
                     href={`mailto:${profile.email}`}
-                    icon={Mail}
+                    icon={Mail as unknown as IconType}
                     label="Email Me"
                     hoverColor="#00e5ff"
                     hoverBorder="rgba(0,229,255,0.3)"
@@ -404,7 +403,6 @@ export default function Contact({ profile }: ContactProps) {
               </div>
             </div>
 
-            {/* Availability badge */}
             {profile?.available && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -414,7 +412,7 @@ export default function Contact({ profile }: ContactProps) {
                 className="flex items-center gap-3 rounded-2xl p-4"
                 style={{
                   background: "rgba(16,185,129,0.06)",
-                  border: "1px solid rgba(16,185,129,0.18)",
+                  border:     "1px solid rgba(16,185,129,0.18)",
                 }}
               >
                 <motion.span
@@ -434,9 +432,7 @@ export default function Contact({ profile }: ContactProps) {
             )}
           </motion.div>
 
-          {/* ════════════════════════════════════
-              RIGHT — Contact form
-          ════════════════════════════════════ */}
+          {/* ── Right: Form ── */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -446,15 +442,13 @@ export default function Contact({ profile }: ContactProps) {
             <div
               className="rounded-3xl p-7"
               style={{
-                background: "rgba(8,12,28,0.97)",
-                border: "1px solid rgba(255,255,255,0.07)",
+                background:     "rgba(8,12,28,0.97)",
+                border:         "1px solid rgba(255,255,255,0.07)",
                 backdropFilter: "blur(24px)",
-                boxShadow: "0 40px 80px rgba(0,0,0,0.4)",
+                boxShadow:      "0 40px 80px rgba(0,0,0,0.4)",
               }}
             >
               <AnimatePresence mode="wait">
-
-                {/* ── Success ── */}
                 {status === "success" ? (
                   <motion.div
                     key="success"
@@ -470,7 +464,7 @@ export default function Contact({ profile }: ContactProps) {
                       className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
                       style={{
                         background: "rgba(16,185,129,0.15)",
-                        border: "1px solid rgba(16,185,129,0.3)",
+                        border:     "1px solid rgba(16,185,129,0.3)",
                       }}
                     >
                       <CheckCircle size={30} className="text-emerald-400" />
@@ -483,10 +477,7 @@ export default function Contact({ profile }: ContactProps) {
                       24&nbsp;hours.
                     </p>
                   </motion.div>
-
                 ) : (
-
-                  /* ── Form ── */
                   <motion.form
                     key="form"
                     initial={{ opacity: 0 }}
@@ -495,7 +486,6 @@ export default function Contact({ profile }: ContactProps) {
                     onSubmit={handleSubmit}
                     noValidate
                   >
-                    {/* Form header */}
                     <div className="mb-6">
                       <h3 className="text-lg font-bold text-white mb-1">
                         Send a Message
@@ -505,7 +495,6 @@ export default function Contact({ profile }: ContactProps) {
                       </p>
                     </div>
 
-                    {/* Error banner */}
                     {status === "error" && (
                       <motion.div
                         initial={{ opacity: 0, y: -8 }}
@@ -513,7 +502,7 @@ export default function Contact({ profile }: ContactProps) {
                         className="flex items-center gap-2.5 p-3 rounded-xl mb-5 text-sm text-red-400"
                         style={{
                           background: "rgba(239,68,68,0.08)",
-                          border: "1px solid rgba(239,68,68,0.2)",
+                          border:     "1px solid rgba(239,68,68,0.2)",
                         }}
                       >
                         <AlertCircle size={15} className="flex-shrink-0" />
@@ -521,12 +510,8 @@ export default function Contact({ profile }: ContactProps) {
                       </motion.div>
                     )}
 
-                    {/* Fields */}
                     <div className="flex flex-col gap-4">
-
-                      {/* Name + Email row */}
                       <div className="grid sm:grid-cols-2 gap-4">
-
                         {/* Name */}
                         <div>
                           <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
@@ -626,10 +611,7 @@ export default function Contact({ profile }: ContactProps) {
                           onBlur={(e) => blurBorder(e, "message")}
                           rows={5}
                           placeholder="Tell me about your project..."
-                          style={{
-                            ...inputStyle(!!errors.message),
-                            resize: "none",
-                          }}
+                          style={{ ...inputStyle(!!errors.message), resize: "none" }}
                         />
                         <div className="flex items-center justify-between mt-1.5">
                           <span>
@@ -643,10 +625,7 @@ export default function Contact({ profile }: ContactProps) {
                           <span
                             className="text-xs ml-auto"
                             style={{
-                              color:
-                                form.message.length > 480
-                                  ? "#f87171"
-                                  : "#475569",
+                              color: form.message.length > 480 ? "#f87171" : "#475569",
                             }}
                           >
                             {form.message.length}/500

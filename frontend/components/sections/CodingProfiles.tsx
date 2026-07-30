@@ -16,102 +16,106 @@ import {
 import { ExternalLink, Code2 } from "lucide-react";
 import SectionTitle from "@/components/ui/SectionTitle";
 import type { Profile } from "@/types/portfolio";
+import type { IconType } from "react-icons";
 
 interface CodingProfilesProps {
   profile: Profile | null;
 }
 
+// ── Use react-icons' own IconType for react-icons components ──
+// React.ElementType is too broad and causes TypeScript to type
+// 'size' as 'never'. IconType is the correct type for react-icons.
 interface PlatformConfig {
-  key: keyof Profile;
-  label: string;
-  icon: React.ElementType;
-  gradient: string;
-  glow: string;
-  border: string;
+  key:         keyof Profile;
+  label:       string;
+  icon:        IconType;
+  gradient:    string;
+  glow:        string;
+  border:      string;
   description: string;
-  prefix: string;
+  prefix:      string;
 }
 
 const PLATFORMS: PlatformConfig[] = [
   {
-    key: "github",
-    label: "GitHub",
-    icon: FaGithub,
-    gradient: "from-slate-700 to-slate-800",
-    glow: "rgba(255,255,255,0.15)",
-    border: "rgba(255,255,255,0.2)",
+    key:         "github",
+    label:       "GitHub",
+    icon:        FaGithub,
+    gradient:    "from-slate-700 to-slate-800",
+    glow:        "rgba(255,255,255,0.15)",
+    border:      "rgba(255,255,255,0.2)",
     description: "Open source projects & contributions",
-    prefix: "github.com/",
+    prefix:      "github.com/",
   },
   {
-    key: "linkedin",
-    label: "LinkedIn",
-    icon: FaLinkedin,
-    gradient: "from-blue-600 to-blue-700",
-    glow: "rgba(59,130,246,0.3)",
-    border: "rgba(59,130,246,0.4)",
+    key:         "linkedin",
+    label:       "LinkedIn",
+    icon:        FaLinkedin,
+    gradient:    "from-blue-600 to-blue-700",
+    glow:        "rgba(59,130,246,0.3)",
+    border:      "rgba(59,130,246,0.4)",
     description: "Professional network & career",
-    prefix: "linkedin.com/in/",
+    prefix:      "linkedin.com/in/",
   },
   {
-    key: "leetcode",
-    label: "LeetCode",
-    icon: SiLeetcode,
-    gradient: "from-amber-500 to-orange-600",
-    glow: "rgba(245,158,11,0.3)",
-    border: "rgba(245,158,11,0.4)",
+    key:         "leetcode",
+    label:       "LeetCode",
+    icon:        SiLeetcode,
+    gradient:    "from-amber-500 to-orange-600",
+    glow:        "rgba(245,158,11,0.3)",
+    border:      "rgba(245,158,11,0.4)",
     description: "DSA problems & competitive programming",
-    prefix: "leetcode.com/u/",
+    prefix:      "leetcode.com/u/",
   },
   {
-    key: "codechef",
-    label: "CodeChef",
-    icon: SiCodechef,
-    gradient: "from-amber-700 to-amber-800",
-    glow: "rgba(180,120,60,0.3)",
-    border: "rgba(180,120,60,0.4)",
+    key:         "codechef",
+    label:       "CodeChef",
+    icon:        SiCodechef,
+    gradient:    "from-amber-700 to-amber-800",
+    glow:        "rgba(180,120,60,0.3)",
+    border:      "rgba(180,120,60,0.4)",
     description: "Competitive programming contests",
-    prefix: "codechef.com/users/",
+    prefix:      "codechef.com/users/",
   },
   {
-    key: "codeforces",
-    label: "Codeforces",
-    icon: SiCodeforces,
-    gradient: "from-blue-700 to-blue-800",
-    glow: "rgba(29,78,216,0.3)",
-    border: "rgba(29,78,216,0.4)",
+    key:         "codeforces",
+    label:       "Codeforces",
+    icon:        SiCodeforces,
+    gradient:    "from-blue-700 to-blue-800",
+    glow:        "rgba(29,78,216,0.3)",
+    border:      "rgba(29,78,216,0.4)",
     description: "Algorithm competitions & ratings",
-    prefix: "codeforces.com/profile/",
+    prefix:      "codeforces.com/profile/",
   },
   {
-    key: "twitter",
-    label: "Twitter / X",
-    icon: FaTwitter,
-    gradient: "from-sky-500 to-sky-600",
-    glow: "rgba(14,165,233,0.3)",
-    border: "rgba(14,165,233,0.4)",
+    key:         "twitter",
+    label:       "Twitter / X",
+    icon:        FaTwitter,
+    gradient:    "from-sky-500 to-sky-600",
+    glow:        "rgba(14,165,233,0.3)",
+    border:      "rgba(14,165,233,0.4)",
     description: "Tech thoughts & updates",
-    prefix: "x.com/",
+    prefix:      "x.com/",
   },
   {
-    key: "instagram",
-    label: "Instagram",
-    icon: FaInstagram,
-    gradient: "from-pink-500 via-rose-500 to-orange-400",
-    glow: "rgba(236,72,153,0.3)",
-    border: "rgba(236,72,153,0.4)",
+    key:         "instagram",
+    label:       "Instagram",
+    icon:        FaInstagram,
+    gradient:    "from-pink-500 via-rose-500 to-orange-400",
+    glow:        "rgba(236,72,153,0.3)",
+    border:      "rgba(236,72,153,0.4)",
     description: "Life & behind the scenes",
-    prefix: "instagram.com/",
+    prefix:      "instagram.com/",
   },
 ];
 
 function extractUsername(url: string, prefix: string): string {
   try {
-    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+    const u    = new URL(url.startsWith("http") ? url : `https://${url}`);
     const path = u.pathname.replace(/^\/+|\/+$/g, "");
-    if (path.startsWith("in/")) return path.replace("in/", "");
-    if (path.startsWith("u/")) return path.replace("u/", "");
-    if (path.startsWith("users/")) return path.replace("users/", "");
+    if (path.startsWith("in/"))      return path.replace("in/", "");
+    if (path.startsWith("u/"))       return path.replace("u/", "");
+    if (path.startsWith("users/"))   return path.replace("users/", "");
     if (path.startsWith("profile/")) return path.replace("profile/", "");
     return path || url;
   } catch {
@@ -125,12 +129,15 @@ function ProfileCard({
   index,
 }: {
   platform: PlatformConfig;
-  url: string;
-  index: number;
+  url:      string;
+  index:    number;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref    = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-40px" });
   const username = extractUsername(url, platform.prefix);
+
+  // Extract to capitalized const — required so TypeScript resolves
+  // the icon's props correctly and accepts size={26}
   const Icon = platform.icon;
 
   const handleCardClick = () => {
@@ -144,14 +151,13 @@ function ProfileCard({
       animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
       transition={{
         duration: 0.5,
-        delay: index * 0.07,
-        ease: [0.23, 1, 0.32, 1],
+        delay:    index * 0.07,
+        ease:     [0.23, 1, 0.32, 1],
       }}
-      // ↓ group is on the outer wrapper so ALL children react to card hover
       className="group relative cursor-pointer"
       onClick={handleCardClick}
     >
-      {/* Glow backdrop — triggers on group (card) hover */}
+      {/* Glow backdrop */}
       <div
         className="absolute -inset-0.5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"
         style={{
@@ -162,42 +168,23 @@ function ProfileCard({
       <motion.div
         className="relative rounded-2xl p-6 flex flex-col gap-4 h-full"
         style={{
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.07)",
+          background:     "rgba(255,255,255,0.03)",
+          border:         "1px solid rgba(255,255,255,0.07)",
           backdropFilter: "blur(20px)",
         }}
         whileHover={{
-          y: -6,
+          y:         -6,
           borderColor: platform.border,
           boxShadow: `0 20px 50px rgba(0,0,0,0.4), 0 0 30px ${platform.glow}`,
         }}
         transition={{ duration: 0.3 }}
       >
-        {/* Top row: icon + external-link corner button */}
+        {/* Top row */}
         <div className="flex items-start justify-between">
-          {/*
-           * Icon box:
-           * - scale + rotate animate when the GROUP (card) is hovered,
-           *   not just when this element itself is hovered.
-           * We use the CSS group-hover variant via a wrapper div +
-           * a Framer Motion variant driven by the group state.
-           *
-           * Simplest approach: keep whileHover on the icon box but
-           * point the trigger at the card via CSS group-hover on a
-           * sibling wrapper that forwards the animation.
-           *
-           * Because Framer's `whileHover` only fires on the element
-           * itself, we instead use `variants` + `whileHover` on the
-           * CARD (motion.div above) and propagate down.
-           *
-           * Cleanest solution: use `animate` driven by a `useState`
-           * that tracks card hover via onHoverStart / onHoverEnd.
-           */}
           <motion.div
             className={`
               w-14 h-14 rounded-2xl bg-gradient-to-br ${platform.gradient}
               flex items-center justify-center shadow-lg
-              /* CSS fallback tilt on card hover */
               transition-transform duration-200
               group-hover:scale-110 group-hover:rotate-[5deg]
             `}
@@ -206,10 +193,6 @@ function ProfileCard({
             <Icon size={26} className="text-white" />
           </motion.div>
 
-          {/*
-           * Corner external-link icon — also clickable independently.
-           * e.stopPropagation() so it doesn't double-fire the card click.
-           */}
           <a
             href={url}
             target="_blank"
@@ -224,7 +207,7 @@ function ProfileCard({
             "
             style={{
               background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.15)",
+              border:     "1px solid rgba(255,255,255,0.15)",
             }}
           >
             <ExternalLink size={13} className="text-slate-300" />
@@ -243,8 +226,8 @@ function ProfileCard({
             className="inline-flex items-center gap-1 text-xs font-mono px-2 py-1 rounded-md"
             style={{
               background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              color: "#94a3b8",
+              border:     "1px solid rgba(255,255,255,0.07)",
+              color:      "#94a3b8",
             }}
           >
             <Code2 size={9} className="text-slate-600" />
@@ -252,7 +235,7 @@ function ProfileCard({
           </div>
         </div>
 
-        {/* "Open Profile" button — stopPropagation so it doesn't double-open */}
+        {/* Open Profile button */}
         <a
           href={url}
           target="_blank"
@@ -260,7 +243,7 @@ function ProfileCard({
           className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-125"
           style={{
             background: `linear-gradient(135deg, ${platform.glow.replace("0.3", "0.15")}, ${platform.glow.replace("0.3", "0.08")})`,
-            border: `1px solid ${platform.border.replace("0.4", "0.2")}`,
+            border:     `1px solid ${platform.border.replace("0.4", "0.2")}`,
           }}
           onClick={(e) => e.stopPropagation()}
         >

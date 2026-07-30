@@ -14,8 +14,10 @@ import {
 import {
   FaAws, FaBrain, FaJava, FaPhp, FaSwift, FaDatabase, FaServer,
 } from "react-icons/fa";
+import type { IconType } from "react-icons";
 import {
   Layers, Server, Database, Cloud, Code2, Cpu, Sparkles, Box, Star, Clock,
+  LucideProps,
 } from "lucide-react";
 import SectionTitle from "@/components/ui/SectionTitle";
 import type { Skill } from "@/types/portfolio";
@@ -24,106 +26,104 @@ interface SkillsProps {
   skills: Skill[];
 }
 
-// ---------------------------------------------------------------------------
-// Icon registry
-// ---------------------------------------------------------------------------
-const ICON_REGISTRY: Array<[string[], React.ElementType]> = [
-  [["react", "reactjs", "react.js"], SiReact],
-  [["nextjs", "next.js", "next", "nextdotjs"], SiNextdotjs],
-  [["typescript", "ts"], SiTypescript],
-  [["tailwind", "tailwindcss", "tailwind css"], SiTailwindcss],
-  [["nodejs", "node.js", "node", "express", "expressjs"], SiNodedotjs],
-  [["nestjs", "nest", "nest.js"], SiNestjs],
-  [["postgresql", "postgres", "pg"], SiPostgresql],
-  [["mongodb", "mongo"], SiMongodb],
-  [["mysql", "mariadb"], SiMysql],
-  [["prisma"], SiPrisma],
-  [["python"], SiPython],
-  [["tensorflow", "tf"], SiTensorflow],
-  [["docker"], SiDocker],
-  [["git", "github", "gitlab"], SiGit],
-  [["redis"], SiRedis],
-  [["graphql", "gql"], SiGraphql],
-  [["javascript", "js", "es6"], SiJavascript],
-  [["html", "html5"], SiHtml5],
-  [["figma"], SiFigma],
-  [["vue", "vuejs", "vue.js"], SiVuedotjs],
-  [["angular"], SiAngular],
-  [["kubernetes", "k8s"], SiKubernetes],
-  [["gcp", "google cloud", "googlecloud"], SiGooglecloud],
-  [["aws", "amazon", "amazon web services", "s3", "ec2", "lambda"], FaAws],
-  [["java", "spring", "springboot"], FaJava],
-  [["php", "laravel"], FaPhp],
-  [["swift", "ios", "xcode"], FaSwift],
-  [["rust"], SiRust],
-  [["go", "golang"], SiGo],
-  [["flutter"], SiFlutter],
-  [["dart"], SiDart],
-  [["firebase"], SiFirebase],
-  [["supabase"], SiSupabase],
-  [["vercel"], SiVercel],
-  [["netlify"], SiNetlify],
-  [["nginx"], SiNginx],
-  [["linux", "ubuntu", "debian"], SiLinuxIcon],
-  [
-    ["openai", "chatgpt", "gpt", "llm", "langchain", "rag", "ai", "ml",
-      "machine learning", "huggingface"],
-    FaBrain,
-  ],
-  [["database", "db", "sql"], FaDatabase],
-  [["server", "backend", "api"], FaServer],
+// ── Precise icon types ────────────────────────────────────────
+// IconType  → react-icons (si, fa)
+// LucideIcon → lucide-react
+// Both accept size as a prop but TypeScript cannot verify this
+// when using the broad React.ElementType union type.
+type LucideIcon = React.ForwardRefExoticComponent<
+  Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+>;
+
+// ── Icon registry — react-icons only ─────────────────────────
+const ICON_REGISTRY: Array<[string[], IconType]> = [
+  [["react", "reactjs", "react.js"],                                                    SiReact      ],
+  [["nextjs", "next.js", "next", "nextdotjs"],                                          SiNextdotjs  ],
+  [["typescript", "ts"],                                                                SiTypescript ],
+  [["tailwind", "tailwindcss", "tailwind css"],                                         SiTailwindcss],
+  [["nodejs", "node.js", "node", "express", "expressjs"],                               SiNodedotjs  ],
+  [["nestjs", "nest", "nest.js"],                                                       SiNestjs     ],
+  [["postgresql", "postgres", "pg"],                                                    SiPostgresql ],
+  [["mongodb", "mongo"],                                                                SiMongodb    ],
+  [["mysql", "mariadb"],                                                                SiMysql      ],
+  [["prisma"],                                                                          SiPrisma     ],
+  [["python"],                                                                          SiPython     ],
+  [["tensorflow", "tf"],                                                                SiTensorflow ],
+  [["docker"],                                                                          SiDocker     ],
+  [["git", "github", "gitlab"],                                                         SiGit        ],
+  [["redis"],                                                                           SiRedis      ],
+  [["graphql", "gql"],                                                                  SiGraphql    ],
+  [["javascript", "js", "es6"],                                                         SiJavascript ],
+  [["html", "html5"],                                                                   SiHtml5      ],
+  [["figma"],                                                                           SiFigma      ],
+  [["vue", "vuejs", "vue.js"],                                                          SiVuedotjs   ],
+  [["angular"],                                                                         SiAngular    ],
+  [["kubernetes", "k8s"],                                                               SiKubernetes ],
+  [["gcp", "google cloud", "googlecloud"],                                              SiGooglecloud],
+  [["aws", "amazon", "amazon web services", "s3", "ec2", "lambda"],                    FaAws        ],
+  [["java", "spring", "springboot"],                                                    FaJava       ],
+  [["php", "laravel"],                                                                  FaPhp        ],
+  [["swift", "ios", "xcode"],                                                           FaSwift      ],
+  [["rust"],                                                                            SiRust       ],
+  [["go", "golang"],                                                                    SiGo         ],
+  [["flutter"],                                                                         SiFlutter    ],
+  [["dart"],                                                                            SiDart       ],
+  [["firebase"],                                                                        SiFirebase   ],
+  [["supabase"],                                                                        SiSupabase   ],
+  [["vercel"],                                                                          SiVercel     ],
+  [["netlify"],                                                                         SiNetlify    ],
+  [["nginx"],                                                                           SiNginx      ],
+  [["linux", "ubuntu", "debian"],                                                       SiLinuxIcon  ],
+  [["openai","chatgpt","gpt","llm","langchain","rag","ai","ml","machine learning","huggingface"], FaBrain   ],
+  [["database", "db", "sql"],                                                           FaDatabase   ],
+  [["server", "backend", "api"],                                                        FaServer     ],
 ];
 
-function resolveIcon(skillName: string): React.ElementType {
+function resolveIcon(skillName: string): IconType {
   const normalized = skillName.toLowerCase().trim().replace(/[\s\-_.]/g, "");
   const original   = skillName.toLowerCase().trim();
   for (const [keys, Icon] of ICON_REGISTRY) {
     for (const key of keys) {
       const keyNorm = key.replace(/[\s\-_.]/g, "");
       if (
-        normalized === keyNorm ||
-        original   === key     ||
-        normalized.includes(keyNorm) ||
+        normalized === keyNorm        ||
+        original   === key            ||
+        normalized.includes(keyNorm)  ||
         keyNorm.includes(normalized)
       ) {
         return Icon;
       }
     }
   }
-  return Code2;
+  // Fallback: Code2 is a LucideIcon, cast to IconType for registry return
+  return Code2 as unknown as IconType;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+// ── Helpers ───────────────────────────────────────────────────
 function isImageUrl(str: string | null | undefined): str is string {
   if (!str || typeof str !== "string") return false;
   const t = str.trim();
   return t.startsWith("http://") || t.startsWith("https://");
 }
 
-// Cloudinary URLs work natively — no proxy needed
 function isCloudinaryUrl(url: string): boolean {
   return url.includes("cloudinary.com") || url.includes("res.cloudinary");
 }
 
-// Build the proxy URL for external icons that have CORS issues
 function toProxiedUrl(url: string): string {
-  if (isCloudinaryUrl(url)) return url; // Cloudinary works directly
+  if (isCloudinaryUrl(url)) return url;
   return `/api/icon-proxy?url=${encodeURIComponent(url)}`;
 }
 
-// ---------------------------------------------------------------------------
-// SkillIcon — proxies external SVGs through Next.js API to bypass CORS
-// ---------------------------------------------------------------------------
+// ── SkillIcon ─────────────────────────────────────────────────
 function SkillIcon({ skill, size = 22 }: { skill: Skill; size?: number }) {
-  const [imgError, setImgError]   = useState(false);
+  const [imgError,  setImgError ] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
   const hasCustomIcon = isImageUrl(skill.icon) && !imgError;
 
   if (hasCustomIcon) {
-    const rawUrl    = skill.icon as string;
+    const rawUrl     = skill.icon as string;
     const proxiedUrl = toProxiedUrl(rawUrl);
 
     return (
@@ -135,7 +135,6 @@ function SkillIcon({ skill, size = 22 }: { skill: Skill; size?: number }) {
           flexShrink: 0,
         }}
       >
-        {/* Fallback icon shown while loading */}
         {!imgLoaded && (
           <div
             style={{
@@ -157,7 +156,6 @@ function SkillIcon({ skill, size = 22 }: { skill: Skill; size?: number }) {
             })()}
           </div>
         )}
-
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={proxiedUrl}
@@ -165,11 +163,7 @@ function SkillIcon({ skill, size = 22 }: { skill: Skill; size?: number }) {
           width={size}
           height={size}
           onLoad={() => setImgLoaded(true)}
-          onError={() => {
-            // If proxied URL fails, fall back to registry icon
-            setImgError(true);
-            setImgLoaded(false);
-          }}
+          onError={() => { setImgError(true); setImgLoaded(false); }}
           style={{
             width:      size,
             height:     size,
@@ -184,17 +178,21 @@ function SkillIcon({ skill, size = 22 }: { skill: Skill; size?: number }) {
     );
   }
 
-  // No custom icon or load failed — use registry
   const Icon = resolveIcon(skill.name);
   return <Icon size={size} className="text-white drop-shadow" />;
 }
 
-// ---------------------------------------------------------------------------
-// Category config
-// ---------------------------------------------------------------------------
+// ── Category config ───────────────────────────────────────────
+// FIXED: icon typed as LucideIcon for lucide-react category icons
 const CATEGORY_CONFIG: Record<
   string,
-  { label: string; icon: React.ElementType; gradient: string; glow: string; border: string }
+  {
+    label:    string;
+    icon:     LucideIcon;
+    gradient: string;
+    glow:     string;
+    border:   string;
+  }
 > = {
   Frontend:    { label: "Frontend",    icon: Layers,   gradient: "from-blue-500 to-cyan-400",     glow: "rgba(59,130,246,0.25)",  border: "rgba(59,130,246,0.3)"  },
   Backend:     { label: "Backend",     icon: Server,   gradient: "from-emerald-500 to-teal-400",  glow: "rgba(16,185,129,0.25)",  border: "rgba(16,185,129,0.3)"  },
@@ -209,14 +207,15 @@ const CATEGORY_CONFIG: Record<
 const getCategory = (cat: string) =>
   CATEGORY_CONFIG[cat] ?? CATEGORY_CONFIG.Other;
 
-// ---------------------------------------------------------------------------
-// Level fallback table
-// ---------------------------------------------------------------------------
-const LEVEL_FALLBACK: Record<string, { percent: number; label: string; color: string }> = {
-  BEGINNER:     { percent: 25, label: "Beginner",     color: "from-slate-400 to-slate-500"  },
-  INTERMEDIATE: { percent: 55, label: "Intermediate", color: "from-blue-400 to-cyan-400"    },
-  ADVANCED:     { percent: 80, label: "Advanced",     color: "from-cyan-400 to-blue-500"    },
-  EXPERT:       { percent: 95, label: "Expert",       color: "from-cyan-400 to-purple-500"  },
+// ── Level fallback ────────────────────────────────────────────
+const LEVEL_FALLBACK: Record<
+  string,
+  { percent: number; label: string; color: string }
+> = {
+  BEGINNER:     { percent: 25, label: "Beginner",     color: "from-slate-400 to-slate-500" },
+  INTERMEDIATE: { percent: 55, label: "Intermediate", color: "from-blue-400 to-cyan-400"   },
+  ADVANCED:     { percent: 80, label: "Advanced",     color: "from-cyan-400 to-blue-500"   },
+  EXPERT:       { percent: 95, label: "Expert",       color: "from-cyan-400 to-purple-500" },
 };
 
 function resolveLevel(skill: Skill): { percent: number; label: string; color: string } {
@@ -249,13 +248,11 @@ function resolveLevel(skill: Skill): { percent: number; label: string; color: st
   return { percent, label, color };
 }
 
-// ---------------------------------------------------------------------------
-// SkillCard
-// ---------------------------------------------------------------------------
+// ── SkillCard ─────────────────────────────────────────────────
 function SkillCard({ skill, index }: { skill: Skill; index: number }) {
   const [hovered, setHovered] = useState(false);
-  const [tiltX, setTiltX]     = useState(0);
-  const [tiltY, setTiltY]     = useState(0);
+  const [tiltX,   setTiltX  ] = useState(0);
+  const [tiltY,   setTiltY  ] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
   const inView  = useInView(cardRef, { once: true, margin: "-30px" });
 
@@ -287,7 +284,6 @@ function SkillCard({ skill, index }: { skill: Skill; index: number }) {
       }}
       className="relative group cursor-default select-none"
     >
-      {/* Glow backdrop */}
       <div
         className="absolute -inset-0.5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"
         style={{ background: `linear-gradient(135deg, ${cat.glow}, transparent)` }}
@@ -309,7 +305,6 @@ function SkillCard({ skill, index }: { skill: Skill; index: number }) {
             transition={{ duration: 0.2 }}
           >
             {hasCustomIcon ? (
-              // Custom uploaded image — neutral dark bg
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
                 style={{
@@ -322,7 +317,6 @@ function SkillCard({ skill, index }: { skill: Skill; index: number }) {
                 <SkillIcon skill={skill} size={28} />
               </div>
             ) : (
-              // Registry icon — gradient background
               <div
                 className={`w-12 h-12 rounded-xl bg-gradient-to-br ${cat.gradient} flex items-center justify-center shadow-lg flex-shrink-0`}
                 style={{ boxShadow: hovered ? `0 8px 25px ${cat.glow}` : undefined }}
@@ -415,12 +409,10 @@ function SkillCard({ skill, index }: { skill: Skill; index: number }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Skills section
-// ---------------------------------------------------------------------------
+// ── Skills section ────────────────────────────────────────────
 export default function Skills({ skills }: SkillsProps) {
-  const [activeCategory, setActiveCategory]     = useState("All");
-  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
+  const [activeCategory,    setActiveCategory   ] = useState("All");
+  const [showFeaturedOnly,  setShowFeaturedOnly ] = useState(false);
 
   const rawCategories = Array.from(new Set(skills.map((s) => s.category)));
   const categories    = ["All", ...rawCategories];
@@ -479,7 +471,9 @@ export default function Skills({ skills }: SkillsProps) {
               <span
                 className="text-[10px] px-1.5 py-0.5 rounded-full font-mono"
                 style={{
-                  background: showFeaturedOnly ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.05)",
+                  background: showFeaturedOnly
+                    ? "rgba(245,158,11,0.15)"
+                    : "rgba(255,255,255,0.05)",
                   color: showFeaturedOnly ? "#fbbf24" : "#64748b",
                 }}
               >
@@ -515,17 +509,23 @@ export default function Skills({ skills }: SkillsProps) {
                   boxShadow: isActive ? "0 0 20px rgba(0,229,255,0.15)" : "none",
                 }}
               >
-                {cfg && (
-                  <cfg.icon
-                    size={13}
-                    className={isActive ? "text-cyan-400" : "text-slate-600"}
-                  />
-                )}
+                {cfg && (() => {
+                  // Extract to const so TypeScript resolves LucideIcon props
+                  const CatIcon = cfg.icon;
+                  return (
+                    <CatIcon
+                      size={13}
+                      className={isActive ? "text-cyan-400" : "text-slate-600"}
+                    />
+                  );
+                })()}
                 <span>{cfg?.label ?? cat}</span>
                 <span
                   className="text-[10px] px-1.5 py-0.5 rounded-full font-mono"
                   style={{
-                    background: isActive ? "rgba(0,229,255,0.2)" : "rgba(255,255,255,0.05)",
+                    background: isActive
+                      ? "rgba(0,229,255,0.2)"
+                      : "rgba(255,255,255,0.05)",
                     color: isActive ? "#00e5ff" : "#64748b",
                   }}
                 >
@@ -589,20 +589,24 @@ export default function Skills({ skills }: SkillsProps) {
               { label: "Categories",   value: rawCategories.length,                                            icon: Layers,   color: "text-blue-400"   },
               { label: "Expert Level", value: skills.filter((s) => s.level.toUpperCase() === "EXPERT").length, icon: Cpu,      color: "text-purple-400" },
               { label: "Featured",     value: featuredCount,                                                   icon: Star,     color: "text-amber-400"  },
-            ].map((stat, i) => (
-              <div
-                key={i}
-                className="rounded-2xl p-5 text-center"
-                style={{
-                  background: "rgba(255,255,255,0.02)",
-                  border:     "1px solid rgba(255,255,255,0.05)",
-                }}
-              >
-                <stat.icon size={20} className={`${stat.color} mx-auto mb-2`} />
-                <div className="text-2xl font-black text-white">{stat.value}</div>
-                <div className="text-xs text-slate-500 mt-1">{stat.label}</div>
-              </div>
-            ))}
+            ].map((stat, i) => {
+              // Extract to const inside map to fix TypeScript
+              const StatIcon = stat.icon;
+              return (
+                <div
+                  key={i}
+                  className="rounded-2xl p-5 text-center"
+                  style={{
+                    background: "rgba(255,255,255,0.02)",
+                    border:     "1px solid rgba(255,255,255,0.05)",
+                  }}
+                >
+                  <StatIcon size={20} className={`${stat.color} mx-auto mb-2`} />
+                  <div className="text-2xl font-black text-white">{stat.value}</div>
+                  <div className="text-xs text-slate-500 mt-1">{stat.label}</div>
+                </div>
+              );
+            })}
           </motion.div>
         )}
       </div>

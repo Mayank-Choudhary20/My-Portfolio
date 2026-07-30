@@ -10,12 +10,12 @@ import {
   Brain,
   Code2,
   GraduationCap,
+  LucideProps,
 } from "lucide-react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import HeroBackground from "@/components/Hero/Background";
 import type { Profile, Resume, Project, Certificate, Setting } from "@/types/portfolio";
 
-// ── Types ──────────────────────────────────────────────────────
 type HeroProps = {
   profile:      Profile      | null;
   resume:       Resume       | null;
@@ -24,55 +24,45 @@ type HeroProps = {
   settings:     Setting      | null;
 };
 
-// ── Convert any Google Drive share URL to direct download URL ─
+// ── Lucide-specific icon type ─────────────────────────────────
+type LucideIcon = React.ForwardRefExoticComponent<
+  Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+>;
+
 function toDirectDownloadUrl(url: string): string {
   if (!url) return url;
-
-  // Google Drive: https://drive.google.com/file/d/FILE_ID/view?...
   const driveMatch = url.match(
     /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/
   );
   if (driveMatch) {
     return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
   }
-
-  // Google Docs export
   const docsMatch = url.match(
     /docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/
   );
   if (docsMatch) {
     return `https://docs.google.com/document/d/${docsMatch[1]}/export?format=pdf`;
   }
-
-  // Already a direct URL — return as-is
   return url;
 }
 
-// ── Download helper — opens direct download link ──────────────
 function downloadResume(rawUrl: string, filename: string) {
   const url = toDirectDownloadUrl(rawUrl);
-
-  // For Google Drive, just open the direct download URL in same tab
-  // (Drive handles auth and forces download)
-  const a = document.createElement("a");
-  a.href = url;
+  const a   = document.createElement("a");
+  a.href     = url;
   a.download = filename;
-  a.target = "_blank";
-  a.rel = "noopener noreferrer";
+  a.target   = "_blank";
+  a.rel      = "noopener noreferrer";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
 }
 
-// ── Parse typing texts from settings ─────────────────────────
-// Admin types: "AI / ML Engineer, Full Stack Developer, System Architect"
-// Returns:     ["AI / ML Engineer", "Full Stack Developer", "System Architect"]
 function parseTypingTexts(
-  raw: string | null | undefined,
+  raw:           string | null | undefined,
   fallbackTitle: string | null | undefined
 ): string[] {
   if (raw && raw.trim()) {
-    // Try JSON first (["text1","text2"])
     if (raw.trim().startsWith("[")) {
       try {
         const parsed = JSON.parse(raw);
@@ -80,18 +70,12 @@ function parseTypingTexts(
           return parsed.map((t: string) => t.trim()).filter(Boolean);
         }
       } catch {
-        // not valid JSON, fall through to comma split
+        // fall through
       }
     }
-    // Comma-separated plain text
-    const parts = raw
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
+    const parts = raw.split(",").map((t) => t.trim()).filter(Boolean);
     if (parts.length > 0) return parts;
   }
-
-  // Fallback: use heroTitle + defaults
   return [
     fallbackTitle || "Full Stack Developer",
     "AI / ML Engineer",
@@ -101,12 +85,11 @@ function parseTypingTexts(
   ];
 }
 
-// ── Typing effect ─────────────────────────────────────────────
 function useTypingEffect(texts: string[], speed = 80, pause = 2200) {
   const [displayed, setDisplayed] = useState("");
   const [textIndex, setTextIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
-  const [deleting, setDeleting]   = useState(false);
+  const [deleting,  setDeleting ] = useState(false);
 
   useEffect(() => {
     const current = texts[textIndex] ?? "";
@@ -131,17 +114,21 @@ function useTypingEffect(texts: string[], speed = 80, pause = 2200) {
 }
 
 // ── Stat Card ─────────────────────────────────────────────────
+// FIXED: icon typed as LucideIcon instead of React.ElementType
 function StatCard({
   value,
   label,
-  icon: Icon,
+  icon,
   delay,
 }: {
   value: string;
   label: string;
-  icon: React.ElementType;
+  icon:  LucideIcon;
   delay: number;
 }) {
+  // Extract to capitalized const
+  const Icon = icon;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -171,12 +158,10 @@ function StatCard({
   );
 }
 
-// ── Helper: format count ──────────────────────────────────────
 function formatCount(count: number): string {
   return count > 0 ? `${count}+` : "0";
 }
 
-// ── Main Hero ─────────────────────────────────────────────────
 export default function Hero({
   profile,
   resume,
@@ -190,39 +175,28 @@ export default function Hero({
     target:  sectionRef,
     offset:  ["start start", "end start"],
   });
-  const contentY       = useTransform(scrollYProgress, [0, 1], [0, -60]);
+  const contentY       = useTransform(scrollYProgress, [0, 1],   [0, -60]);
   const contentOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
 
-  // ── Text from settings → profile → hardcoded fallback ────────
-  const greeting = settings?.heroGreeting ?? "Hello, I'm";
-
-  // Available badge text — controlled by settings + profile.available boolean
-  const availableText = settings?.heroAvailableText ?? "Available for Opportunities";
-  const busyText      = settings?.heroBusyText      ?? "Currently Occupied";
-  const badgeText     = profile?.available !== false ? availableText : busyText;
-
-  // Subtitle under the name
-  const heroSubtitle =
+  const greeting       = settings?.heroGreeting ?? "Hello, I'm";
+  const availableText  = settings?.heroAvailableText ?? "Available for Opportunities";
+  const busyText       = settings?.heroBusyText      ?? "Currently Occupied";
+  const badgeText      = profile?.available !== false ? availableText : busyText;
+  const heroSubtitle   =
     settings?.heroSubtitle ||
     profile?.tagline ||
     "Building intelligent systems at the intersection of AI and exceptional user experiences.";
 
-  // Typing texts — parse comma-separated string from settings
   const typingTexts = parseTypingTexts(
     settings?.heroTypingTexts,
     settings?.heroTitle || profile?.title
   );
+  const typedText   = useTypingEffect(typingTexts, 75, 2200);
+  const resumeUrl   = settings?.resumeUrl || resume?.fileUrl || null;
 
-  const typedText = useTypingEffect(typingTexts, 75, 2200);
+  const firstName   = profile?.name?.split(" ")[0]                || "Mayank";
+  const lastName    = profile?.name?.split(" ").slice(1).join(" ") || "Choudhary";
 
-  // ── Resume URL — prefer settings, fallback to resume model ───
-  const resumeUrl = settings?.resumeUrl || resume?.fileUrl || null;
-
-  // ── Name split ───────────────────────────────────────────────
-  const firstName = profile?.name?.split(" ")[0]                || "Mayank";
-  const lastName  = profile?.name?.split(" ").slice(1).join(" ") || "Choudhary";
-
-  // ── Socials — settings → profile ─────────────────────────────
   const githubUrl   = settings?.githubUrl   || profile?.github   || null;
   const linkedinUrl = settings?.linkedinUrl || profile?.linkedin || null;
   const emailAddr   = settings?.email       || profile?.email    || null;
@@ -237,9 +211,9 @@ export default function Hero({
   };
   const item = {
     hidden: { opacity: 0, y: 20 },
-    show: {
+    show:   {
       opacity: 1,
-      y: 0,
+      y:       0,
       transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] as const },
     },
   };
@@ -310,7 +284,7 @@ export default function Hero({
         />
       </div>
 
-      {/* ── Content ─────────────────────────────────────────────── */}
+      {/* Content */}
       <motion.div
         style={{
           y:        contentY,
@@ -339,15 +313,15 @@ export default function Hero({
               zIndex:   20,
             }}
           >
-            {/* ── Available badge ────────────────────────────────── */}
+            {/* Available badge */}
             <motion.div variants={item} style={{ marginBottom: "1.5rem" }}>
               <div
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full"
                 style={{
-                  background:     profile?.available !== false
+                  background: profile?.available !== false
                     ? "rgba(16,185,129,0.08)"
                     : "rgba(239,68,68,0.08)",
-                  border:         profile?.available !== false
+                  border: profile?.available !== false
                     ? "1px solid rgba(16,185,129,0.25)"
                     : "1px solid rgba(239,68,68,0.25)",
                   backdropFilter: "blur(12px)",
@@ -373,7 +347,7 @@ export default function Hero({
               </div>
             </motion.div>
 
-            {/* ── Greeting ───────────────────────────────────────── */}
+            {/* Greeting */}
             <motion.p
               variants={item}
               style={{
@@ -388,7 +362,7 @@ export default function Hero({
               {greeting}
             </motion.p>
 
-            {/* ── Name ───────────────────────────────────────────── */}
+            {/* Name */}
             <motion.h1
               variants={item}
               style={{
@@ -415,7 +389,7 @@ export default function Hero({
               </span>
             </motion.h1>
 
-            {/* ── Typing role ────────────────────────────────────── */}
+            {/* Typing role */}
             <motion.div
               variants={item}
               style={{
@@ -468,7 +442,7 @@ export default function Hero({
               </div>
             </motion.div>
 
-            {/* ── Subtitle ───────────────────────────────────────── */}
+            {/* Subtitle */}
             <motion.p
               variants={item}
               style={{
@@ -482,7 +456,7 @@ export default function Hero({
               {heroSubtitle}
             </motion.p>
 
-            {/* ── CTA buttons ────────────────────────────────────── */}
+            {/* CTA buttons */}
             <motion.div
               variants={item}
               style={{
@@ -535,7 +509,7 @@ export default function Hero({
               </motion.a>
             </motion.div>
 
-            {/* ── Socials ────────────────────────────────────────── */}
+            {/* Socials */}
             <motion.div
               variants={item}
               style={{
@@ -568,28 +542,31 @@ export default function Hero({
                 { icon: FaLinkedin, href: linkedinUrl, label: "LinkedIn" },
               ]
                 .filter((s) => s.href)
-                .map((s) => (
-                  <motion.a
-                    key={s.label}
-                    href={s.href!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={s.label}
-                    className="flex items-center justify-center text-slate-500 hover:text-white transition-colors"
-                    style={{
-                      width:          38,
-                      height:         38,
-                      borderRadius:   10,
-                      background:     "rgba(2,6,23,0.7)",
-                      border:         "1px solid rgba(255,255,255,0.08)",
-                      backdropFilter: "blur(12px)",
-                    }}
-                    whileHover={{ y: -3, scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <s.icon size={16} />
-                  </motion.a>
-                ))}
+                .map((s) => {
+                  const SocialIcon = s.icon;
+                  return (
+                    <motion.a
+                      key={s.label}
+                      href={s.href!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={s.label}
+                      className="flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+                      style={{
+                        width:          38,
+                        height:         38,
+                        borderRadius:   10,
+                        background:     "rgba(2,6,23,0.7)",
+                        border:         "1px solid rgba(255,255,255,0.08)",
+                        backdropFilter: "blur(12px)",
+                      }}
+                      whileHover={{ y: -3, scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <SocialIcon size={16} />
+                    </motion.a>
+                  );
+                })}
               {emailAddr && (
                 <motion.a
                   href={`mailto:${emailAddr}`}
@@ -611,7 +588,7 @@ export default function Hero({
               )}
             </motion.div>
 
-            {/* ── Stats ──────────────────────────────────────────── */}
+            {/* Stats */}
             <motion.div
               variants={item}
               style={{ display: "flex", flexWrap: "wrap", gap: "0.6rem" }}
