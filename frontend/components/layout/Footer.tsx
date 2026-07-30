@@ -20,6 +20,7 @@ import {
   Repeat2,
   CalendarDays,
   Building2,
+  LucideProps,
 } from "lucide-react";
 import type { Profile, Resume, Setting, VisitorStats } from "@/types/portfolio";
 
@@ -56,26 +57,22 @@ function downloadResume(rawUrl: string, filename: string) {
 }
 
 // ── Animated counter ──────────────────────────────────────────
-// Re-animates from current displayed value to new target
-// whenever target changes — this is the key fix for SSE updates
 function useCounter(target: number, duration = 1400, active = false) {
-  const [value, setValue]   = useState(0);
-  const prevTarget          = useRef(0);
-  const rafRef              = useRef<number | null>(null);
+  const [value, setValue]    = useState(0);
+  const prevTarget           = useRef(0);
+  const rafRef               = useRef<number | null>(null);
 
   useEffect(() => {
     if (!active) return;
 
-    // Cancel any in-progress animation
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
     }
 
-    const startValue = prevTarget.current;
-    const endValue   = target;
-    prevTarget.current = target;
+    const startValue       = prevTarget.current;
+    const endValue         = target;
+    prevTarget.current     = target;
 
-    // If same value, no animation needed
     if (startValue === endValue) {
       setValue(endValue);
       return;
@@ -86,7 +83,6 @@ function useCounter(target: number, duration = 1400, active = false) {
     const tick = (now: number) => {
       const elapsed  = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out cubic
       const eased    = 1 - Math.pow(1 - progress, 3);
       const current  = Math.round(startValue + (endValue - startValue) * eased);
       setValue(current);
@@ -107,17 +103,24 @@ function useCounter(target: number, duration = 1400, active = false) {
         rafRef.current = null;
       }
     };
-  // Re-run whenever target changes — this makes SSE updates animate
   }, [target, duration, active]);
 
   return value;
 }
 
+// ── FIXED: Use lucide-specific icon type instead of React.ElementType ──
+// React.ElementType is too broad and causes 'size' prop to be typed
+// as 'never' because react-icons components don't share the same
+// prop interface as lucide-react icons.
+type LucideIcon = React.ForwardRefExoticComponent<
+  Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+>;
+
 interface StatConfig {
   key:      keyof VisitorStats;
   label:    string;
   suffix:   string;
-  icon:     React.ElementType;
+  icon:     LucideIcon;        // ← was React.ElementType, now LucideIcon
   gradient: string;
   glow:     string;
   border:   string;
@@ -168,8 +171,8 @@ function MiniStatCard({
   active: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
-  // Stagger initial entrance, but animate immediately on value change
   const counted = useCounter(value, 1200, active);
+  const Icon = config.icon;
 
   return (
     <motion.div
@@ -196,14 +199,19 @@ function MiniStatCard({
         animate={hovered ? { y: -3 } : { y: 0 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
       >
+        {/* ── Icon: extracted to const + typed correctly ── */}
         <motion.div
           className={`w-10 h-10 rounded-lg bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg flex-shrink-0`}
           animate={hovered ? { scale: 1.1, rotate: 4 } : { scale: 1, rotate: 0 }}
           transition={{ duration: 0.2 }}
           style={{ boxShadow: hovered ? `0 6px 20px ${config.glow}` : undefined }}
         >
-          <config.icon size={18} className="text-white" />
+          {/* Using extracted const 'Icon' fixes the TypeScript error.
+              config.icon inline was ambiguous — now TypeScript knows
+              exactly which type it is rendering. */}
+          <Icon size={18} className="text-white" />
         </motion.div>
+
         <div className="min-w-0">
           <div className="flex items-end gap-0.5">
             <span className="text-xl font-black text-white leading-none tabular-nums">
@@ -219,11 +227,13 @@ function MiniStatCard({
             {config.label}
           </p>
         </div>
+
         <motion.div
           className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-emerald-400"
           animate={{ opacity: [1, 0.3, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
+
         <AnimatePresence>
           {hovered && (
             <motion.div
@@ -233,7 +243,8 @@ function MiniStatCard({
               transition={{ duration: 0.6, ease: "easeInOut" }}
               className="absolute inset-0 rounded-xl pointer-events-none"
               style={{
-                background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent)",
+                background:
+                  "linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent)",
               }}
             />
           )}
@@ -252,15 +263,14 @@ export default function Footer({
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   const statsRef    = useRef<HTMLDivElement>(null);
-  // ── KEY FIX: once: false so stats re-animate on SSE updates ──
   const statsInView = useInView(statsRef, { once: false, margin: "-60px" });
 
-  const portfolioName = settings?.portfolioName || profile?.name     || "Mayank Choudhary";
+  const portfolioName = settings?.portfolioName || profile?.name        || "Mayank Choudhary";
   const tagline       = profile?.tagline        || settings?.heroSubtitle || "Building intelligent, scalable systems.";
-  const location      = settings?.location      || profile?.location || null;
-  const email         = settings?.email         || profile?.email    || null;
-  const phone         = settings?.phone         || profile?.phone    || null;
-  const resumeUrl     = settings?.resumeUrl     || resume?.fileUrl   || null;
+  const location      = settings?.location      || profile?.location    || null;
+  const email         = settings?.email         || profile?.email       || null;
+  const phone         = settings?.phone         || profile?.phone       || null;
+  const resumeUrl     = settings?.resumeUrl     || resume?.fileUrl      || null;
   const profileTitle  = profile?.title          || "AI & Full Stack Developer";
 
   const github    = settings?.githubUrl    || profile?.github    || null;
@@ -306,6 +316,7 @@ export default function Footer({
         borderTop:  "1px solid rgba(255,255,255,0.05)",
       }}
     >
+      {/* Background blobs */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-blue-600/4 blur-[100px]" />
         <div className="absolute top-0 right-1/4 w-96 h-96 rounded-full bg-purple-600/4 blur-[100px]" />
@@ -315,7 +326,7 @@ export default function Footer({
       <div className="relative section-container py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
 
-          {/* Brand */}
+          {/* ── Brand ── */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
               <div
@@ -352,7 +363,7 @@ export default function Footer({
             )}
           </div>
 
-          {/* Nav col 1 */}
+          {/* ── Nav col 1 ── */}
           <div>
             <h4 className="text-xs font-semibold text-white mb-4 tracking-widest uppercase">
               Navigation
@@ -364,7 +375,9 @@ export default function Footer({
                     href={link.href}
                     className="text-sm text-slate-500 hover:text-cyan-400 transition-colors duration-200 flex items-center gap-1 group"
                   >
-                    <span className="w-0 group-hover:w-2 overflow-hidden transition-all duration-200 text-cyan-400 text-xs">›</span>
+                    <span className="w-0 group-hover:w-2 overflow-hidden transition-all duration-200 text-cyan-400 text-xs">
+                      ›
+                    </span>
                     {link.label}
                   </a>
                 </li>
@@ -372,7 +385,7 @@ export default function Footer({
             </ul>
           </div>
 
-          {/* Nav col 2 */}
+          {/* ── Nav col 2 ── */}
           <div>
             <h4 className="text-xs font-semibold text-white mb-4 tracking-widest uppercase">
               More
@@ -384,7 +397,9 @@ export default function Footer({
                     href={link.href}
                     className="text-sm text-slate-500 hover:text-cyan-400 transition-colors duration-200 flex items-center gap-1 group"
                   >
-                    <span className="w-0 group-hover:w-2 overflow-hidden transition-all duration-200 text-cyan-400 text-xs">›</span>
+                    <span className="w-0 group-hover:w-2 overflow-hidden transition-all duration-200 text-cyan-400 text-xs">
+                      ›
+                    </span>
                     {link.label}
                   </a>
                 </li>
@@ -392,30 +407,38 @@ export default function Footer({
             </ul>
           </div>
 
-          {/* Connect */}
+          {/* ── Connect ── */}
           <div>
             <h4 className="text-xs font-semibold text-white mb-4 tracking-widest uppercase">
               Connect
             </h4>
             <div className="flex flex-wrap gap-2 mb-5">
-              {socials.map((s) => (
-                <motion.a
-                  key={s.label}
-                  href={s.href!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={s.label}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 transition-all"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border:     "1px solid rgba(255,255,255,0.07)",
-                  }}
-                  whileHover={{ y: -3, scale: 1.1, color: s.color, borderColor: `${s.color}40` }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <s.icon size={15} />
-                </motion.a>
-              ))}
+              {socials.map((s) => {
+                const SocialIcon = s.icon;
+                return (
+                  <motion.a
+                    key={s.label}
+                    href={s.href!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={s.label}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 transition-all"
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border:     "1px solid rgba(255,255,255,0.07)",
+                    }}
+                    whileHover={{
+                      y: -3,
+                      scale: 1.1,
+                      color: s.color,
+                      borderColor: `${s.color}40`,
+                    }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <SocialIcon size={15} />
+                  </motion.a>
+                );
+              })}
             </div>
             {resumeUrl && (
               <button
@@ -439,7 +462,7 @@ export default function Footer({
           </div>
         </div>
 
-        {/* Live analytics */}
+        {/* ── Live analytics ── */}
         <div
           ref={statsRef}
           className="mb-8"
@@ -471,7 +494,11 @@ export default function Footer({
               />
               <span
                 className="text-cyan-400 font-semibold"
-                style={{ fontSize: "0.6rem", letterSpacing: "0.15em", textTransform: "uppercase" }}
+                style={{
+                  fontSize:      "0.6rem",
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                }}
               >
                 Live Analytics
               </span>
@@ -508,7 +535,7 @@ export default function Footer({
           </motion.div>
         </div>
 
-        {/* Copyright */}
+        {/* ── Copyright ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-slate-600">
             © {new Date().getFullYear()} {portfolioName}. All rights reserved.
