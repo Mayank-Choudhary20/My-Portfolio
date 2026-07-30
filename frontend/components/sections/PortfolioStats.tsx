@@ -14,12 +14,17 @@ import {
 import type { VisitorStats } from "@/types/portfolio";
 
 // ── Lucide-specific icon type ─────────────────────────────────
-// React.ElementType is too broad — TypeScript cannot verify that
-// 'size' is a valid prop when it could be any component.
-// This precise type fixes the 'never' error on size={22}.
 type LucideIcon = React.ForwardRefExoticComponent<
   Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
 >;
+
+// ── Numeric-only keys of VisitorStats ─────────────────────────
+// keyof VisitorStats includes array fields like topCountries which
+// are not numbers. This mapped type extracts ONLY the keys whose
+// value is number, so stats[cfg.key] is always safely a number.
+type NumericVisitorKey = {
+  [K in keyof VisitorStats]-?: VisitorStats[K] extends number ? K : never;
+}[keyof VisitorStats];
 
 // ── Animated counter ──────────────────────────────────────────
 function useCounter(target: number, duration = 2000, active = false) {
@@ -69,9 +74,8 @@ function Particle({ delay, x, y }: { delay: number; x: string; y: string }) {
 }
 
 // ── Stat card config ──────────────────────────────────────────
-// FIXED: icon typed as LucideIcon instead of React.ElementType
 interface StatConfig {
-  key:      keyof VisitorStats;
+  key:      NumericVisitorKey;
   label:    string;
   suffix:   string;
   icon:     LucideIcon;
@@ -138,11 +142,7 @@ function StatCard({
 }) {
   const [hovered, setHovered] = useState(false);
   const counted = useCounter(value, 2000 + index * 200, active);
-
-  // Extract to capitalized const — TypeScript requires this pattern
-  // to correctly resolve JSX component props from a typed variable.
-  // Using config.icon inline would keep the type ambiguous.
-  const Icon = config.icon;
+  const Icon    = config.icon;
 
   return (
     <motion.div
@@ -186,8 +186,6 @@ function StatCard({
       >
         {/* Top row */}
         <div className="flex items-start justify-between">
-
-          {/* Icon box — uses extracted const, not config.icon inline */}
           <motion.div
             className={`w-12 h-12 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg`}
             animate={hovered ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
@@ -412,7 +410,7 @@ export default function PortfolioStats({ stats }: PortfolioStatsProps) {
             <div key={cfg.key} role="listitem">
               <StatCard
                 config={cfg}
-                value={stats[cfg.key]}
+                value={stats[cfg.key] as number}
                 index={i}
                 active={inView}
               />
