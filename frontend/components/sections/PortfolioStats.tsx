@@ -9,10 +9,19 @@ import {
   CalendarDays,
   TrendingUp,
   Wifi,
+  LucideProps,
 } from "lucide-react";
 import type { VisitorStats } from "@/types/portfolio";
 
-// ── Animated counter ─────────────────────────────────────────
+// ── Lucide-specific icon type ─────────────────────────────────
+// React.ElementType is too broad — TypeScript cannot verify that
+// 'size' is a valid prop when it could be any component.
+// This precise type fixes the 'never' error on size={22}.
+type LucideIcon = React.ForwardRefExoticComponent<
+  Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+>;
+
+// ── Animated counter ──────────────────────────────────────────
 function useCounter(target: number, duration = 2000, active = false) {
   const [value, setValue] = useState(0);
 
@@ -27,7 +36,6 @@ function useCounter(target: number, duration = 2000, active = false) {
     const tick = (now: number) => {
       const elapsed  = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out cubic
       const eased    = 1 - Math.pow(1 - progress, 3);
       setValue(Math.round(startValue + (target - startValue) * eased));
       if (progress < 1) requestAnimationFrame(tick);
@@ -39,7 +47,7 @@ function useCounter(target: number, duration = 2000, active = false) {
   return value;
 }
 
-// ── Floating particle ────────────────────────────────────────
+// ── Floating particle ─────────────────────────────────────────
 function Particle({ delay, x, y }: { delay: number; x: string; y: string }) {
   return (
     <motion.div
@@ -60,12 +68,13 @@ function Particle({ delay, x, y }: { delay: number; x: string; y: string }) {
   );
 }
 
-// ── Stat card config ─────────────────────────────────────────
+// ── Stat card config ──────────────────────────────────────────
+// FIXED: icon typed as LucideIcon instead of React.ElementType
 interface StatConfig {
   key:      keyof VisitorStats;
   label:    string;
   suffix:   string;
-  icon:     React.ElementType;
+  icon:     LucideIcon;
   gradient: string;
   glow:     string;
   border:   string;
@@ -115,20 +124,25 @@ const STATS: StatConfig[] = [
   },
 ];
 
-// ── Single stat card ─────────────────────────────────────────
+// ── Single stat card ──────────────────────────────────────────
 function StatCard({
   config,
   value,
   index,
   active,
 }: {
-  config:  StatConfig;
-  value:   number;
-  index:   number;
-  active:  boolean;
+  config: StatConfig;
+  value:  number;
+  index:  number;
+  active: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
   const counted = useCounter(value, 2000 + index * 200, active);
+
+  // Extract to capitalized const — TypeScript requires this pattern
+  // to correctly resolve JSX component props from a typed variable.
+  // Using config.icon inline would keep the type ambiguous.
+  const Icon = config.icon;
 
   return (
     <motion.div
@@ -172,7 +186,8 @@ function StatCard({
       >
         {/* Top row */}
         <div className="flex items-start justify-between">
-          {/* Icon */}
+
+          {/* Icon box — uses extracted const, not config.icon inline */}
           <motion.div
             className={`w-12 h-12 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg`}
             animate={hovered ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
@@ -181,7 +196,7 @@ function StatCard({
               boxShadow: hovered ? `0 8px 24px ${config.glow}` : undefined,
             }}
           >
-            <config.icon size={22} className="text-white" />
+            <Icon size={22} className="text-white" />
           </motion.div>
 
           {/* Live indicator */}
@@ -209,7 +224,7 @@ function StatCard({
             <span
               className="text-4xl font-black tabular-nums leading-none"
               style={{
-                background:           `linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)`,
+                background:           "linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor:  "transparent",
                 backgroundClip:       "text",
@@ -243,7 +258,11 @@ function StatCard({
               className={`h-full rounded-full bg-gradient-to-r ${config.gradient}`}
               initial={{ width: 0 }}
               animate={active ? { width: "100%" } : { width: 0 }}
-              transition={{ delay: index * 0.15 + 0.5, duration: 1.5, ease: "easeOut" }}
+              transition={{
+                delay:    index * 0.15 + 0.5,
+                duration: 1.5,
+                ease:     "easeOut",
+              }}
             />
           </div>
         </div>
@@ -277,7 +296,7 @@ function StatCard({
   );
 }
 
-// ── Main section ─────────────────────────────────────────────
+// ── Main section ──────────────────────────────────────────────
 interface PortfolioStatsProps {
   stats: VisitorStats;
 }
@@ -301,17 +320,11 @@ export default function PortfolioStats({ stats }: PortfolioStatsProps) {
     >
       {/* ── Ambient background ── */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Top border */}
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
-        {/* Bottom border */}
         <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
-
-        {/* Glow blobs */}
         <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-96 h-96 rounded-full bg-cyan-600/5 blur-[120px]" />
         <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-96 h-96 rounded-full bg-purple-600/5 blur-[120px]" />
         <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-transparent via-blue-950/10 to-transparent" />
-
-        {/* Grid */}
         <div
           className="absolute inset-0 opacity-[0.02]"
           style={{
@@ -321,14 +334,13 @@ export default function PortfolioStats({ stats }: PortfolioStatsProps) {
             backgroundSize: "60px 60px",
           }}
         />
-
-        {/* Floating particles */}
         {PARTICLES.map((p) => (
           <Particle key={p.id} delay={p.delay} x={p.x} y={p.y} />
         ))}
       </div>
 
       <div className="relative section-container">
+
         {/* ── Header ── */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -336,8 +348,8 @@ export default function PortfolioStats({ stats }: PortfolioStatsProps) {
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="text-center mb-14"
         >
-          {/* Label badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-5"
+          <div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-5"
             style={{
               background: "rgba(0,229,255,0.06)",
               border:     "1px solid rgba(0,229,255,0.15)",
@@ -346,7 +358,11 @@ export default function PortfolioStats({ stats }: PortfolioStatsProps) {
             <TrendingUp size={12} className="text-cyan-400" />
             <span
               className="text-cyan-400 font-semibold"
-              style={{ fontSize: "0.65rem", letterSpacing: "0.15em", textTransform: "uppercase" }}
+              style={{
+                fontSize:      "0.65rem",
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+              }}
             >
               Live Analytics
             </span>
@@ -373,7 +389,6 @@ export default function PortfolioStats({ stats }: PortfolioStatsProps) {
             Real-time insights from visitors around the world — updated live.
           </p>
 
-          {/* Live indicator row */}
           <div className="flex items-center justify-center gap-2 mt-4">
             <Wifi size={12} className="text-emerald-400" />
             <span className="text-[11px] text-emerald-400 font-semibold tracking-wider uppercase">
