@@ -13,21 +13,30 @@ import {
   Zap,
   MessageCircle,
   Database,
+  LucideProps,
 } from "lucide-react";
 import SectionTitle from "@/components/ui/SectionTitle";
 import type { AiKnowledge, Profile } from "@/types/portfolio";
 
 interface AskMayankAIProps {
   aiKnowledge: AiKnowledge[];
-  profile: Profile | null;
+  profile:     Profile | null;
 }
 
 interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
+  id:        string;
+  role:      "user" | "assistant";
+  content:   string;
   timestamp: Date;
 }
+
+// ── Lucide-specific icon type ─────────────────────────────────
+// React.ElementType is too broad — TypeScript cannot verify that
+// 'size' is a valid prop when the union includes all possible
+// component types. This precise type fixes the 'never' error.
+type LucideIcon = React.ForwardRefExoticComponent<
+  Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+>;
 
 const SUGGESTIONS = [
   "Tell me about yourself",
@@ -40,11 +49,11 @@ const SUGGESTIONS = [
   "How can I contact you?",
 ];
 
-/* ─── AI answer engine ────────────────────────────────────── */
+// ── AI answer engine ──────────────────────────────────────────
 function findAnswer(
-  query: string,
+  query:     string,
   knowledge: AiKnowledge[],
-  profile: Profile | null
+  profile:   Profile | null
 ): string {
   const q = query.toLowerCase().trim();
 
@@ -69,23 +78,23 @@ function findAnswer(
   ) {
     if (profile) {
       return `You can reach ${profile.name} at:\n📧 Email: ${profile.email}${
-        profile.phone ? `\n📞 Phone: ${profile.phone}` : ""
+        profile.phone    ? `\n📞 Phone: ${profile.phone}`       : ""
       }${profile.location ? `\n📍 Location: ${profile.location}` : ""}`;
     }
   }
 
   const scored = knowledge
     .map((k) => {
-      const kq = k.question.toLowerCase();
-      const ka = k.answer.toLowerCase();
-      let score = 0;
+      const kq    = k.question.toLowerCase();
+      const ka    = k.answer.toLowerCase();
+      let score   = 0;
       const words = q
         .replace(/[^\w\s]/g, "")
         .split(/\s+/)
         .filter((w) => w.length > 2);
       words.forEach((word) => {
-        if (kq.includes(word)) score += 3;
-        if (ka.includes(word)) score += 1;
+        if (kq.includes(word))              score += 3;
+        if (ka.includes(word))              score += 1;
         if (k.category?.toLowerCase().includes(word)) score += 2;
       });
       if (kq.includes(q.substring(0, 10))) score += 5;
@@ -98,7 +107,7 @@ function findAnswer(
 
   if (profile) {
     if (
-      q.includes("who") ||
+      q.includes("who")  ||
       q.includes("yourself") ||
       q.includes("about") ||
       q.includes("introduce")
@@ -112,7 +121,7 @@ function findAnswer(
   return "I don't have specific information about that yet. You can reach out directly through the contact section or check my LinkedIn/GitHub profiles for more details!";
 }
 
-/* ─── Typing indicator ────────────────────────────────────── */
+// ── Typing indicator ──────────────────────────────────────────
 function TypingIndicator() {
   return (
     <div className="flex items-center gap-1.5 px-4 py-3">
@@ -123,10 +132,10 @@ function TypingIndicator() {
           style={{ background: "#00e5ff" }}
           animate={{ y: [0, -5, 0], opacity: [0.4, 1, 0.4] }}
           transition={{
-            duration: 0.8,
-            repeat: Infinity,
-            delay: i * 0.15,
-            ease: "easeInOut",
+            duration:  0.8,
+            repeat:    Infinity,
+            delay:     i * 0.15,
+            ease:      "easeInOut",
           }}
         />
       ))}
@@ -134,13 +143,13 @@ function TypingIndicator() {
   );
 }
 
-/* ─── Message bubble ─────────────────────────────────────── */
+// ── Message bubble ────────────────────────────────────────────
 function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === "user";
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      animate={{ opacity: 1, y: 0,  scale: 1    }}
       transition={{ duration: 0.25, ease: "easeOut" }}
       className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
@@ -171,8 +180,10 @@ function MessageBubble({ message }: { message: Message }) {
           border: isUser
             ? "1px solid rgba(59,130,246,0.25)"
             : "1px solid rgba(255,255,255,0.07)",
-          color: isUser ? "#e2e8f0" : "#cbd5e1",
-          borderRadius: isUser ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
+          color:        isUser ? "#e2e8f0" : "#cbd5e1",
+          borderRadius: isUser
+            ? "16px 4px 16px 16px"
+            : "4px 16px 16px 16px",
         }}
       >
         {message.content}
@@ -181,22 +192,30 @@ function MessageBubble({ message }: { message: Message }) {
   );
 }
 
-/* ─── Stat pill ───────────────────────────────────────────── */
+// ── Stat pill ─────────────────────────────────────────────────
+// FIXED: Changed icon prop type from React.ElementType to LucideIcon.
+// React.ElementType caused TypeScript to type 'size' as 'never'
+// because it could not narrow the prop intersection across all
+// possible component types.
 function StatPill({
-  icon: Icon,
+  icon,
   label,
   value,
 }: {
-  icon: React.ElementType;
+  icon:  LucideIcon;
   label: string;
   value: string | number;
 }) {
+  // Extract to capitalized const — TypeScript requires this pattern
+  // to correctly resolve JSX component props from a variable.
+  const Icon = icon;
+
   return (
     <div
       className="flex items-center gap-2.5 px-4 py-3 rounded-xl"
       style={{
         background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        border:     "1px solid rgba(255,255,255,0.06)",
       }}
     >
       <Icon size={15} className="text-cyan-500 flex-shrink-0" />
@@ -208,33 +227,28 @@ function StatPill({
   );
 }
 
-/* ─── Main component ─────────────────────────────────────── */
+// ── Main component ────────────────────────────────────────────
 export default function AskMayankAI({
   aiKnowledge,
   profile,
 }: AskMayankAIProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "init",
-      role: "assistant",
-      content: `Hi! I'm an AI assistant trained on ${
+      id:        "init",
+      role:      "assistant",
+      content:   `Hi! I'm an AI assistant trained on ${
         profile?.name || "Mayank"
       }'s portfolio data. Ask me anything about his skills, experience, projects, or education! 🚀`,
       timestamp: new Date(),
     },
   ]);
-  const [input, setInput] = useState("");
+  const [input,    setInput   ] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
-  /*
-    KEY FIX: scroll the CHAT BOX div, not the whole page.
-    We ref the scrollable message container directly.
-  */
-  const chatBoxRef = useRef<HTMLDivElement>(null);
+  const chatBoxRef     = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef       = useRef<HTMLInputElement>(null);
 
-  /* Scroll only within the chat box — no page jump */
   const scrollChatToBottom = useCallback(() => {
     if (chatBoxRef.current) {
       chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
@@ -251,9 +265,9 @@ export default function AskMayankAI({
       if (!trimmed || isTyping) return;
 
       const userMsg: Message = {
-        id: `u-${Date.now()}`,
-        role: "user",
-        content: trimmed,
+        id:        `u-${Date.now()}`,
+        role:      "user",
+        content:   trimmed,
         timestamp: new Date(),
       };
 
@@ -264,11 +278,11 @@ export default function AskMayankAI({
       const delay = 300 + Math.random() * 500;
       await new Promise((r) => setTimeout(r, delay));
 
-      const answer = findAnswer(trimmed, aiKnowledge, profile);
+      const answer  = findAnswer(trimmed, aiKnowledge, profile);
       const aiMsg: Message = {
-        id: `a-${Date.now()}`,
-        role: "assistant",
-        content: answer,
+        id:        `a-${Date.now()}`,
+        role:      "assistant",
+        content:   answer,
         timestamp: new Date(),
       };
 
@@ -278,19 +292,15 @@ export default function AskMayankAI({
     [aiKnowledge, profile, isTyping]
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    sendMessage(input);
-  };
-
+  const handleSubmit    = (e: React.FormEvent) => { e.preventDefault(); sendMessage(input); };
   const handleSuggestion = (s: string) => sendMessage(s);
 
   const resetChat = () => {
     setMessages([
       {
-        id: "init-reset",
-        role: "assistant",
-        content: `Hi! I'm an AI assistant trained on ${
+        id:        "init-reset",
+        role:      "assistant",
+        content:   `Hi! I'm an AI assistant trained on ${
           profile?.name || "Mayank"
         }'s portfolio data. Ask me anything about his skills, experience, projects, or education! 🚀`,
         timestamp: new Date(),
@@ -314,7 +324,6 @@ export default function AskMayankAI({
         <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
         <div className="absolute top-1/3 -right-32 w-[550px] h-[550px] rounded-full bg-cyan-600/[0.04] blur-[150px]" />
         <div className="absolute bottom-1/3 -left-32 w-[550px] h-[550px] rounded-full bg-purple-600/[0.04] blur-[150px]" />
-        {/* Animated scan line */}
         <motion.div
           className="absolute left-0 right-0 h-px pointer-events-none"
           style={{
@@ -328,7 +337,7 @@ export default function AskMayankAI({
 
       <div className="relative section-container">
 
-        {/* ══ Section heading — RESTORED ══ */}
+        {/* ── Section heading ── */}
         <SectionTitle
           label="AI Assistant"
           title="Ask"
@@ -350,8 +359,8 @@ export default function AskMayankAI({
             transition={{ duration: 0.7 }}
             className="rounded-3xl overflow-hidden flex flex-col"
             style={{
-              background: "rgba(8,12,28,0.97)",
-              border: "1px solid rgba(0,229,255,0.15)",
+              background:     "rgba(8,12,28,0.97)",
+              border:         "1px solid rgba(0,229,255,0.15)",
               boxShadow:
                 "0 0 0 1px rgba(0,229,255,0.05), 0 40px 80px rgba(0,0,0,0.5)",
               backdropFilter: "blur(40px)",
@@ -362,7 +371,7 @@ export default function AskMayankAI({
               className="flex items-center justify-between px-6 py-4 flex-shrink-0"
               style={{
                 borderBottom: "1px solid rgba(255,255,255,0.06)",
-                background: "rgba(0,229,255,0.02)",
+                background:   "rgba(0,229,255,0.02)",
               }}
             >
               <div className="flex items-center gap-3">
@@ -407,7 +416,7 @@ export default function AskMayankAI({
                 className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition-colors px-3 py-1.5 rounded-lg"
                 style={{
                   background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.07)",
+                  border:     "1px solid rgba(255,255,255,0.07)",
                 }}
                 aria-label="Reset chat"
               >
@@ -416,11 +425,7 @@ export default function AskMayankAI({
               </button>
             </div>
 
-            {/*
-              MESSAGE AREA
-              ─ overflow-y-auto is on THIS div (chatBoxRef)
-              ─ fixed height so only this box scrolls, NOT the page
-            */}
+            {/* Message area */}
             <div
               ref={chatBoxRef}
               className="flex flex-col gap-4 p-6 overflow-y-auto"
@@ -451,8 +456,8 @@ export default function AskMayankAI({
                   </div>
                   <div
                     style={{
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.07)",
+                      background:   "rgba(255,255,255,0.04)",
+                      border:       "1px solid rgba(255,255,255,0.07)",
                       borderRadius: "4px 16px 16px 16px",
                     }}
                   >
@@ -461,17 +466,16 @@ export default function AskMayankAI({
                 </motion.div>
               )}
 
-              {/* Invisible anchor — kept for safety but scrollTop handles it */}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Suggestions — only when conversation is fresh */}
+            {/* Suggestions */}
             <AnimatePresence>
               {messages.length <= 2 && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
+                  exit={{   opacity: 0, height: 0    }}
                   className="px-6 pb-4 flex-shrink-0"
                   style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}
                 >
@@ -487,11 +491,11 @@ export default function AskMayankAI({
                         className="text-xs px-3 py-1.5 rounded-lg text-slate-400 hover:text-cyan-400 transition-all flex items-center gap-1"
                         style={{
                           background: "rgba(255,255,255,0.03)",
-                          border: "1px solid rgba(255,255,255,0.07)",
+                          border:     "1px solid rgba(255,255,255,0.07)",
                         }}
                         whileHover={{
                           borderColor: "rgba(0,229,255,0.3)",
-                          background: "rgba(0,229,255,0.05)",
+                          background:  "rgba(0,229,255,0.05)",
                         }}
                         whileTap={{ scale: 0.96 }}
                       >
@@ -520,7 +524,7 @@ export default function AskMayankAI({
                   className="flex-1 px-4 py-3 rounded-xl text-sm text-slate-200 placeholder-slate-600 focus:outline-none transition-all disabled:opacity-50"
                   style={{
                     background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    border:     "1px solid rgba(255,255,255,0.08)",
                   }}
                   onFocus={(e) =>
                     (e.target.style.borderColor = "rgba(0,229,255,0.3)")
@@ -537,10 +541,10 @@ export default function AskMayankAI({
                   className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 disabled:opacity-40 disabled:pointer-events-none"
                   style={{
                     background: "linear-gradient(135deg, #00e5ff, #3b82f6)",
-                    boxShadow: "0 4px 15px rgba(0,229,255,0.3)",
+                    boxShadow:  "0 4px 15px rgba(0,229,255,0.3)",
                   }}
                   whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{   scale: 0.95 }}
                   aria-label="Send message"
                 >
                   <Send size={16} className="text-white" />
@@ -563,8 +567,8 @@ export default function AskMayankAI({
             <div
               className="rounded-2xl p-5"
               style={{
-                background: "rgba(8,12,28,0.97)",
-                border: "1px solid rgba(0,229,255,0.12)",
+                background:     "rgba(8,12,28,0.97)",
+                border:         "1px solid rgba(0,229,255,0.12)",
                 backdropFilter: "blur(20px)",
               }}
             >
@@ -573,14 +577,18 @@ export default function AskMayankAI({
                   className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{
                     background: "rgba(124,58,237,0.15)",
-                    border: "1px solid rgba(124,58,237,0.25)",
+                    border:     "1px solid rgba(124,58,237,0.25)",
                   }}
                 >
                   <MessageCircle size={16} className="text-purple-400" />
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-white">How it works</div>
-                  <div className="text-xs text-slate-600">Locally powered AI</div>
+                  <div className="text-sm font-bold text-white">
+                    How it works
+                  </div>
+                  <div className="text-xs text-slate-600">
+                    Locally powered AI
+                  </div>
                 </div>
               </div>
               <ul className="space-y-2.5">
@@ -623,8 +631,8 @@ export default function AskMayankAI({
               <div
                 className="rounded-2xl p-5"
                 style={{
-                  background: "rgba(8,12,28,0.97)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background:     "rgba(8,12,28,0.97)",
+                  border:         "1px solid rgba(255,255,255,0.06)",
                   backdropFilter: "blur(20px)",
                 }}
               >
@@ -641,8 +649,8 @@ export default function AskMayankAI({
                       className="text-xs px-3 py-1.5 rounded-full font-medium"
                       style={{
                         background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        color: "#64748b",
+                        border:     "1px solid rgba(255,255,255,0.08)",
+                        color:      "#64748b",
                       }}
                     >
                       {cat}
@@ -656,8 +664,8 @@ export default function AskMayankAI({
             <div
               className="rounded-2xl p-5"
               style={{
-                background: "rgba(8,12,28,0.97)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                background:     "rgba(8,12,28,0.97)",
+                border:         "1px solid rgba(255,255,255,0.06)",
                 backdropFilter: "blur(20px)",
               }}
             >
@@ -675,11 +683,11 @@ export default function AskMayankAI({
                     className="text-xs text-left px-3 py-2 rounded-lg text-slate-400 hover:text-cyan-400 flex items-center gap-2 transition-all"
                     style={{
                       background: "rgba(255,255,255,0.02)",
-                      border: "1px solid rgba(255,255,255,0.06)",
+                      border:     "1px solid rgba(255,255,255,0.06)",
                     }}
                     whileHover={{
                       borderColor: "rgba(0,229,255,0.25)",
-                      background: "rgba(0,229,255,0.04)",
+                      background:  "rgba(0,229,255,0.04)",
                     }}
                     whileTap={{ scale: 0.97 }}
                   >
