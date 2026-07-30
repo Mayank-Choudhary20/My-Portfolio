@@ -15,15 +15,19 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'http://localhost:3001',
-    ],
+      process.env.FRONTEND_URL || '',
+      process.env.ADMIN_URL || '',
+    ].filter(Boolean),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  await app.listen(4000);
+  const port = process.env.PORT || 4000;
 
-  console.log('🚀 Server running on http://localhost:4000');
+  await app.listen(port);
+
+  console.log(`🚀 Server running on port ${port}`);
 }
 
 bootstrap();
