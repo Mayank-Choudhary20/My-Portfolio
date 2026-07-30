@@ -26,7 +26,12 @@ import {
   TrendingUp,
   ExternalLink,
 } from "lucide-react";
-import { useAuthStore, useSidebarStore, useCommandStore } from "@/lib/store";
+import {
+  useAuthStore,
+  useSidebarStore,
+  useCommandStore,
+  useAuthHydrated,
+} from "@/lib/store";
 import { ToastContainer } from "@/components/ui/Toast";
 
 const NAV = [
@@ -46,6 +51,33 @@ const NAV = [
   { label: "Admins", icon: ShieldCheck, href: "/admins" },
 ];
 
+// ─── Spinner ──────────────────────────────────────────────────────────────────
+function FullPageSpinner() {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#000",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          width: "24px",
+          height: "24px",
+          border: "2px solid rgba(255,255,255,0.1)",
+          borderTopColor: "rgba(255,255,255,0.6)",
+          borderRadius: "50%",
+          animation: "dspin 0.7s linear infinite",
+        }}
+      />
+      <style>{`@keyframes dspin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -54,28 +86,32 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, admin, logout } = useAuthStore();
+  const hydrated = useAuthHydrated();
+
   const sidebarOpen = useSidebarStore((s) => s.isOpen);
   const openSidebar = useSidebarStore((s) => s.open);
   const closeSidebar = useSidebarStore((s) => s.close);
   const toggleSidebar = useSidebarStore((s) => s.toggle);
   const toggleCommand = useCommandStore((s) => s.toggle);
 
-  const [mounted, setMounted] = useState(false);
   const [mobile, setMobile] = useState(false);
 
-  // Mount + resize
+  // Resize handler — no auth dependency, safe to run immediately
   useEffect(() => {
-    setMounted(true);
     const check = () => setMobile(window.innerWidth < 1024);
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Auth guard
+  // Auth guard — ONLY runs after Zustand has hydrated from localStorage.
+  // Without the hydrated check, isAuthenticated is always false on first
+  // render, which causes the redirect loop.
   useEffect(() => {
-    if (mounted && !isAuthenticated) router.push("/login");
-  }, [mounted, isAuthenticated, router]);
+    if (hydrated && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [hydrated, isAuthenticated, router]);
 
   // Keyboard shortcut
   useEffect(() => {
@@ -89,31 +125,12 @@ export default function DashboardLayout({
     return () => window.removeEventListener("keydown", handler);
   }, [toggleCommand]);
 
-  // Loading
-  if (!mounted || !isAuthenticated) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#000",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            width: "24px",
-            height: "24px",
-            border: "2px solid rgba(255,255,255,0.1)",
-            borderTopColor: "rgba(255,255,255,0.6)",
-            borderRadius: "50%",
-            animation: "dspin 0.7s linear infinite",
-          }}
-        />
-        <style>{`@keyframes dspin{to{transform:rotate(360deg)}}`}</style>
-      </div>
-    );
+  // Show spinner in two cases:
+  // 1. Zustand has not yet hydrated → we don't know auth state yet
+  // 2. Hydrated but not authenticated → redirect is in progress
+  // Both cases must show the spinner, never the dashboard content.
+  if (!hydrated || !isAuthenticated) {
+    return <FullPageSpinner />;
   }
 
   const currentPage = NAV.find((n) => n.href === pathname)?.label || "";
@@ -133,9 +150,7 @@ export default function DashboardLayout({
             style={{
               position: "fixed",
               inset: 0,
-              background: mobile
-                ? "rgba(0,0,0,0.7)"
-                : "rgba(0,0,0,0.35)",
+              background: mobile ? "rgba(0,0,0,0.7)" : "rgba(0,0,0,0.35)",
               backdropFilter: "blur(3px)",
               zIndex: 40,
             }}
@@ -151,7 +166,11 @@ export default function DashboardLayout({
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
-            transition={{ type: "tween", duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+            transition={{
+              type: "tween",
+              duration: 0.2,
+              ease: [0.25, 0.1, 0.25, 1],
+            }}
             style={{
               position: "fixed",
               top: 0,
@@ -177,7 +196,9 @@ export default function DashboardLayout({
                 flexShrink: 0,
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 <div
                   style={{
                     width: "26px",
@@ -190,7 +211,13 @@ export default function DashboardLayout({
                     flexShrink: 0,
                   }}
                 >
-                  <span style={{ color: "#000", fontWeight: 900, fontSize: "11px" }}>
+                  <span
+                    style={{
+                      color: "#000",
+                      fontWeight: 900,
+                      fontSize: "11px",
+                    }}
+                  >
                     A
                   </span>
                 </div>
@@ -241,25 +268,35 @@ export default function DashboardLayout({
                         padding: "8px 10px",
                         borderRadius: "8px",
                         background: active ? "#fff" : "transparent",
-                        color: active ? "#000" : "rgba(255,255,255,0.35)",
+                        color: active
+                          ? "#000"
+                          : "rgba(255,255,255,0.35)",
                         transition: "all 0.12s",
                         cursor: "pointer",
                       }}
                       onMouseEnter={(e) => {
                         if (!active) {
-                          e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                          e.currentTarget.style.color = "rgba(255,255,255,0.8)";
+                          e.currentTarget.style.background =
+                            "rgba(255,255,255,0.05)";
+                          e.currentTarget.style.color =
+                            "rgba(255,255,255,0.8)";
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!active) {
                           e.currentTarget.style.background = "transparent";
-                          e.currentTarget.style.color = "rgba(255,255,255,0.35)";
+                          e.currentTarget.style.color =
+                            "rgba(255,255,255,0.35)";
                         }
                       }}
                     >
                       <item.icon size={15} style={{ flexShrink: 0 }} />
-                      <span style={{ fontSize: "12.5px", fontWeight: active ? 600 : 500 }}>
+                      <span
+                        style={{
+                          fontSize: "12.5px",
+                          fontWeight: active ? 600 : 500,
+                        }}
+                      >
                         {item.label}
                       </span>
                     </div>
@@ -299,7 +336,10 @@ export default function DashboardLayout({
                       flexShrink: 0,
                     }}
                   >
-                    <User size={10} style={{ color: "rgba(255,255,255,0.4)" }} />
+                    <User
+                      size={10}
+                      style={{ color: "rgba(255,255,255,0.4)" }}
+                    />
                   </div>
                   <p
                     style={{
@@ -347,7 +387,13 @@ export default function DashboardLayout({
       </AnimatePresence>
 
       {/* ── Main ───────────────────────────────────────────────────── */}
-      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         {/* Header */}
         <header
           style={{
@@ -365,7 +411,9 @@ export default function DashboardLayout({
             flexShrink: 0,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div
+            style={{ display: "flex", alignItems: "center", gap: "10px" }}
+          >
             <button
               onClick={toggleSidebar}
               style={{
