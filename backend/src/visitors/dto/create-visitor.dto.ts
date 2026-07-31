@@ -24,4 +24,9 @@ export class CreateVisitorDto {
   @IsOptional()
   @IsString()
   os?: string;
+
+  // ── NEW — sent from the Next.js API route ──────────────────────
+  @IsOptional()
+  @IsString()
+  userAgent?: string;
 }
