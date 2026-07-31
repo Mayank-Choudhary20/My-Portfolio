@@ -1,109 +1,372 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Command, Briefcase, Cpu, User, FileText, Settings, X } from "lucide-react";
+import {
+  Search, LayoutDashboard, User, Briefcase, Cpu, GraduationCap,
+  Award, ImageIcon, FileText, Brain, Users, Mail, Settings,
+  ShieldCheck, TrendingUp, X, ArrowRight,
+} from "lucide-react";
 import { useCommandStore } from "@/lib/store";
 
-const commands = [
-  { group: "General", items: [
-    { label: "Dashboard", href: "/dashboard", icon: Command },
-    { label: "Settings", href: "/settings", icon: Settings },
-  ]},
-  { group: "Content", items: [
-    { label: "Manage Profile", href: "/profile", icon: User },
-    { label: "Add Project", href: "/projects/new", icon: Briefcase },
-    { label: "Update Skills", href: "/skills", icon: Cpu },
-    { label: "Upload Resume", href: "/resume", icon: FileText },
-  ]},
+// ── All searchable commands ───────────────────────────────────────────────────
+const ALL_COMMANDS = [
+  // General
+  { group: "General",  label: "Dashboard",    href: "/dashboard",    icon: LayoutDashboard, keywords: ["home", "overview", "analytics"] },
+  { group: "General",  label: "Settings",     href: "/settings",     icon: Settings,        keywords: ["config", "preferences", "seo"] },
+  { group: "General",  label: "Admins",       href: "/admins",       icon: ShieldCheck,     keywords: ["admin", "users", "password", "security"] },
+
+  // Content
+  { group: "Content",  label: "Profile",      href: "/profile",      icon: User,            keywords: ["about", "bio", "name", "photo", "avatar"] },
+  { group: "Content",  label: "Projects",     href: "/projects",     icon: Briefcase,       keywords: ["portfolio", "work", "github", "live"] },
+  { group: "Content",  label: "Skills",       href: "/skills",       icon: Cpu,             keywords: ["tech", "technology", "stack", "expertise"] },
+  { group: "Content",  label: "Experience",   href: "/experience",   icon: TrendingUp,      keywords: ["work", "job", "company", "career"] },
+  { group: "Content",  label: "Education",    href: "/education",    icon: GraduationCap,   keywords: ["degree", "college", "university", "school"] },
+  { group: "Content",  label: "Certificates", href: "/certificates", icon: Award,           keywords: ["award", "certification", "course"] },
+  { group: "Content",  label: "Showcase",     href: "/showcase",     icon: ImageIcon,       keywords: ["gallery", "demo", "media", "image"] },
+  { group: "Content",  label: "Resume",       href: "/resume",       icon: FileText,        keywords: ["cv", "pdf", "download", "document"] },
+  { group: "Content",  label: "AI Knowledge", href: "/ai",           icon: Brain,           keywords: ["ai", "knowledge", "faq", "questions", "answers"] },
+
+  // Analytics
+  { group: "Analytics",label: "Visitors",     href: "/visitors",     icon: Users,           keywords: ["traffic", "analytics", "geo", "country", "city"] },
+  { group: "Analytics",label: "Contacts",     href: "/contacts",     icon: Mail,            keywords: ["messages", "inbox", "email", "inquiries"] },
 ];
 
 export function CommandPalette() {
   const { isOpen, close } = useCommandStore();
-  const router = useRouter();
-  const [query, setQuery] = useState("");
+  const router             = useRouter();
+  const [query, setQuery]  = useState("");
+  const inputRef           = useRef<HTMLInputElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
 
-  const filteredItems = useMemo(() => {
-    if (!query) return commands;
-    return commands.map(group => ({
-      ...group,
-      items: group.items.filter(item => 
-        item.label.toLowerCase().includes(query.toLowerCase())
-      )
-    })).filter(group => group.items.length > 0);
+  // ── Filter commands based on query ───────────────────────────────────────
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) {
+      // Show all groups when no query
+      const groups: { group: string; items: typeof ALL_COMMANDS }[] = [];
+      for (const cmd of ALL_COMMANDS) {
+        const existing = groups.find((g) => g.group === cmd.group);
+        if (existing) existing.items.push(cmd);
+        else groups.push({ group: cmd.group, items: [cmd] });
+      }
+      return groups;
+    }
+
+    // Search label + keywords
+    const matched = ALL_COMMANDS.filter(
+      (cmd) =>
+        cmd.label.toLowerCase().includes(q) ||
+        cmd.group.toLowerCase().includes(q) ||
+        cmd.keywords.some((k) => k.includes(q))
+    );
+
+    // Group results
+    const groups: { group: string; items: typeof ALL_COMMANDS }[] = [];
+    for (const cmd of matched) {
+      const existing = groups.find((g) => g.group === cmd.group);
+      if (existing) existing.items.push(cmd);
+      else groups.push({ group: cmd.group, items: [cmd] });
+    }
+    return groups;
   }, [query]);
 
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [close]);
+  // Flat list for keyboard nav
+  const flatItems = useMemo(
+    () => filtered.flatMap((g) => g.items),
+    [filtered]
+  );
 
-  if (!isOpen) return null;
+  // Reset active index when results change
+  useEffect(() => {
+    setActiveIdx(0);
+  }, [query]);
+
+  // Focus input when opened
+  useEffect(() => {
+    if (isOpen) {
+      setQuery("");
+      setActiveIdx(0);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [isOpen]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        close();
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveIdx((i) => Math.min(i + 1, flatItems.length - 1));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveIdx((i) => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const item = flatItems[activeIdx];
+        if (item) {
+          router.push(item.href);
+          close();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isOpen, close, flatItems, activeIdx, router]);
+
+  const handleSelect = (href: string) => {
+    router.push(href);
+    close();
+  };
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
-        <motion.div 
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          onClick={close} className="fixed inset-0 bg-black/80 backdrop-blur-sm" 
-        />
-        
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: -20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: -20 }}
-          className="w-full max-w-xl glass-card shadow-2xl overflow-hidden relative z-10 border-white/10"
+      {isOpen && (
+        <div
+          style={{
+            position:       "fixed",
+            inset:          0,
+            zIndex:         100,
+            display:        "flex",
+            alignItems:     "flex-start",
+            justifyContent: "center",
+            paddingTop:     "15vh",
+            paddingLeft:    "16px",
+            paddingRight:   "16px",
+          }}
         >
-          <div className="p-4 border-b border-white/5 flex items-center gap-3">
-            <Search size={18} className="text-white/30" />
-            <input
-              autoFocus
-              className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-white/20 text-sm"
-              placeholder="Type a command or search..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button onClick={close} className="p-1 hover:bg-white/5 rounded text-white/20"><X size={16}/></button>
-          </div>
+          {/* Backdrop */}
+          <motion.div
+            key="cp-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={close}
+            style={{
+              position:       "fixed",
+              inset:          0,
+              background:     "rgba(0,0,0,0.8)",
+              backdropFilter: "blur(4px)",
+            }}
+          />
 
-          <div className="max-h-[60vh] overflow-y-auto p-2">
-            {filteredItems.length === 0 && (
-              <div className="p-8 text-center text-white/20 text-sm">No results found.</div>
-            )}
-            {filteredItems.map((group) => (
-              <div key={group.group} className="mb-4">
-                <div className="px-3 py-2 text-[10px] font-bold text-white/20 uppercase tracking-widest">{group.group}</div>
-                {group.items.map((item) => (
-                  <button
-                    key={item.label}
-                    onClick={() => { router.push(item.href); close(); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-white/60 hover:text-white text-sm text-left group"
-                  >
-                    <item.icon size={16} className="text-white/20 group-hover:text-white" />
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
-          
-          <div className="p-3 bg-white/[0.02] border-t border-white/5 flex justify-between items-center px-4">
-            <div className="flex gap-4">
-              <span className="text-[10px] text-white/20 flex items-center gap-1">
-                <kbd className="bg-white/10 px-1 rounded text-white/40">↑↓</kbd> Navigate
-              </span>
-              <span className="text-[10px] text-white/20 flex items-center gap-1">
-                <kbd className="bg-white/10 px-1 rounded text-white/40">↵</kbd> Select
+          {/* Panel */}
+          <motion.div
+            key="cp-panel"
+            initial={{ opacity: 0, scale: 0.96, y: -12 }}
+            animate={{ opacity: 1, scale: 1,    y: 0    }}
+            exit={{   opacity: 0, scale: 0.96, y: -12   }}
+            transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+            style={{
+              position:        "relative",
+              zIndex:          101,
+              width:           "100%",
+              maxWidth:        "560px",
+              background:      "#111",
+              border:          "1px solid rgba(255,255,255,0.1)",
+              borderRadius:    "14px",
+              overflow:        "hidden",
+              boxShadow:       "0 24px 80px rgba(0,0,0,0.8)",
+            }}
+          >
+            {/* Search input */}
+            <div
+              style={{
+                display:      "flex",
+                alignItems:   "center",
+                gap:          "10px",
+                padding:      "14px 16px",
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
+              <Search size={16} style={{ color: "rgba(255,255,255,0.3)", flexShrink: 0 }} />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search pages, settings, content..."
+                style={{
+                  flex:        1,
+                  background:  "transparent",
+                  border:      "none",
+                  outline:     "none",
+                  color:       "#fff",
+                  fontSize:    "14px",
+                  lineHeight:  1,
+                }}
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery("")}
+                  style={{ background: "none", border: "none", color: "rgba(255,255,255,0.25)", cursor: "pointer", padding: "2px", display: "flex" }}
+                >
+                  <X size={15} />
+                </button>
+              )}
+              <button
+                onClick={close}
+                style={{
+                  padding:      "4px 8px",
+                  background:   "rgba(255,255,255,0.05)",
+                  border:       "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "5px",
+                  color:        "rgba(255,255,255,0.3)",
+                  fontSize:     "10px",
+                  cursor:       "pointer",
+                  flexShrink:   0,
+                }}
+              >
+                ESC
+              </button>
+            </div>
+
+            {/* Results */}
+            <div style={{ maxHeight: "420px", overflowY: "auto", padding: "6px" }}>
+              {filtered.length === 0 ? (
+                <div style={{ padding: "40px 16px", textAlign: "center" }}>
+                  <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.2)", margin: 0 }}>
+                    No results for &ldquo;{query}&rdquo;
+                  </p>
+                </div>
+              ) : (
+                filtered.map((group) => (
+                  <div key={group.group} style={{ marginBottom: "4px" }}>
+                    {/* Group label */}
+                    <p
+                      style={{
+                        fontSize:      "9px",
+                        fontWeight:    700,
+                        color:         "rgba(255,255,255,0.2)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.1em",
+                        padding:       "6px 10px 4px",
+                        margin:        0,
+                      }}
+                    >
+                      {group.group}
+                    </p>
+
+                    {/* Items */}
+                    {group.items.map((item) => {
+                      const globalIdx = flatItems.indexOf(item);
+                      const isActive  = globalIdx === activeIdx;
+
+                      return (
+                        <button
+                          key={item.href}
+                          onClick={() => handleSelect(item.href)}
+                          onMouseEnter={() => setActiveIdx(globalIdx)}
+                          style={{
+                            width:          "100%",
+                            display:        "flex",
+                            alignItems:     "center",
+                            gap:            "10px",
+                            padding:        "9px 10px",
+                            borderRadius:   "8px",
+                            border:         "none",
+                            background:     isActive ? "rgba(255,255,255,0.08)" : "transparent",
+                            color:          isActive ? "#fff" : "rgba(255,255,255,0.5)",
+                            cursor:         "pointer",
+                            textAlign:      "left",
+                            transition:     "background 0.1s ease, color 0.1s ease",
+                            marginBottom:   "1px",
+                          }}
+                        >
+                          {/* Icon */}
+                          <div
+                            style={{
+                              width:           "28px",
+                              height:          "28px",
+                              borderRadius:    "7px",
+                              background:      isActive ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)",
+                              display:         "flex",
+                              alignItems:      "center",
+                              justifyContent:  "center",
+                              flexShrink:      0,
+                              transition:      "background 0.1s ease",
+                            }}
+                          >
+                            <item.icon size={14} style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.3)" }} />
+                          </div>
+
+                          {/* Label */}
+                          <span style={{ flex: 1, fontSize: "13px", fontWeight: isActive ? 600 : 400 }}>
+                            {item.label}
+                          </span>
+
+                          {/* Arrow shown when active */}
+                          {isActive && (
+                            <ArrowRight size={13} style={{ color: "rgba(255,255,255,0.3)", flexShrink: 0 }} />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Footer hints */}
+            <div
+              style={{
+                padding:      "10px 16px",
+                borderTop:    "1px solid rgba(255,255,255,0.05)",
+                background:   "rgba(255,255,255,0.01)",
+                display:      "flex",
+                alignItems:   "center",
+                gap:          "16px",
+              }}
+            >
+              {[
+                { keys: ["↑", "↓"], label: "Navigate" },
+                { keys: ["↵"],      label: "Open"     },
+                { keys: ["ESC"],    label: "Close"    },
+              ].map((hint) => (
+                <div key={hint.label} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                  <div style={{ display: "flex", gap: "2px" }}>
+                    {hint.keys.map((k) => (
+                      <kbd
+                        key={k}
+                        style={{
+                          padding:      "2px 5px",
+                          background:   "rgba(255,255,255,0.06)",
+                          border:       "1px solid rgba(255,255,255,0.08)",
+                          borderRadius: "4px",
+                          fontSize:     "10px",
+                          color:        "rgba(255,255,255,0.35)",
+                          fontFamily:   "monospace",
+                        }}
+                      >
+                        {k}
+                      </kbd>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.2)" }}>
+                    {hint.label}
+                  </span>
+                </div>
+              ))}
+
+              {/* Result count */}
+              <span style={{ marginLeft: "auto", fontSize: "10px", color: "rgba(255,255,255,0.15)" }}>
+                {flatItems.length} result{flatItems.length !== 1 ? "s" : ""}
               </span>
             </div>
-            <span className="text-[10px] text-white/20">
-              <kbd className="bg-white/10 px-1 rounded text-white/40">ESC</kbd> Close
-            </span>
-          </div>
-        </motion.div>
-      </div>
+          </motion.div>
+        </div>
+      )}
     </AnimatePresence>
   );
 }
