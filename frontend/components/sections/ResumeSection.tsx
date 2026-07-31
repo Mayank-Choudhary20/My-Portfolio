@@ -37,27 +37,55 @@ function getDirectDownloadUrl(url: string): string {
   return url;
 }
 
+// ── Mobile-safe download ──────────────────────────────────────
+// Problem: On mobile browsers, <a download> is ignored for
+// cross-origin URLs (like Google Drive). The file opens instead
+// of downloading.
+//
+// Fix: Fetch the file as a blob, create a local blob:// URL,
+// then use <a download> on that local URL. Since blob:// URLs
+// are same-origin, the download attribute is always respected
+// on both desktop and mobile.
 async function triggerDownload(
-  fileUrl: string,
+  fileUrl:   string,
   fileName = "resume.pdf",
   onLoading: (v: boolean) => void,
-) {
+): Promise<void> {
   onLoading(true);
   const downloadUrl = getDirectDownloadUrl(fileUrl);
+
   try {
-    const res = await fetch(downloadUrl);
-    if (!res.ok) throw new Error("fetch failed");
+    const res = await fetch(downloadUrl, { mode: "cors" });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
     const blob    = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
+
+    // Ensure the blob has a PDF MIME type so mobile browsers
+    // treat it as a PDF file rather than an unknown binary
+    const pdfBlob = new Blob([blob], {
+      type: blob.type || "application/pdf",
+    });
+
+    const blobUrl = URL.createObjectURL(pdfBlob);
+
     const a       = document.createElement("a");
     a.href        = blobUrl;
     a.download    = fileName;
+    // Do NOT set target="_blank" on blob URLs — some mobile
+    // browsers open a new tab instead of downloading when both
+    // download and target="_blank" are set together
     document.body.appendChild(a);
     a.click();
-    a.remove();
+    document.body.removeChild(a);
+
+    // Keep the URL alive long enough for the download to start
     setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
   } catch {
-    window.open(downloadUrl, "_blank");
+    // Fallback for CORS errors or network failures:
+    // open directly in a new tab — user can then long-press
+    // on mobile to save, or use browser menu to download
+    window.open(downloadUrl, "_blank", "noopener,noreferrer");
   } finally {
     onLoading(false);
   }
@@ -80,7 +108,6 @@ function DocumentPreviewCard({ thumbnailUrl, title }: DocumentPreviewCardProps) 
       animate={{ y: [0, -8, 0] }}
       transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
     >
-      {/* ── Outer card shell ── */}
       <div
         style={{
           width:        220,
@@ -93,20 +120,17 @@ function DocumentPreviewCard({ thumbnailUrl, title }: DocumentPreviewCardProps) 
           overflow:     "hidden",
         }}
       >
-        {/* ── Inner inset with rounded corners ── */}
         <div
           style={{
             position:     "absolute",
-            inset:        6,                 // slightly larger gap from outer edge
-            borderRadius: 10,               // slightly rounded — not sharp, not too round
+            inset:        6,
+            borderRadius: 10,
             overflow:     "hidden",
             background:   "#f8fafc",
-            // Subtle inner shadow so image feels inset
             boxShadow:    "inset 0 0 0 1px rgba(0,0,0,0.06)",
           }}
         >
           {hasImage ? (
-            /* Thumbnail image — perfectly fills the inset box */
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={thumbnailUrl!}
@@ -116,14 +140,12 @@ function DocumentPreviewCard({ thumbnailUrl, title }: DocumentPreviewCardProps) 
                 width:          "100%",
                 height:         "100%",
                 objectFit:      "cover",
-                // Center horizontally, start from top — shows the top of resume
                 objectPosition: "center top",
                 display:        "block",
-                borderRadius:   10,         // matches parent so corners are rounded
+                borderRadius:   10,
               }}
             />
           ) : (
-            /* CSS document fallback */
             <div
               style={{
                 width:          "100%",
@@ -198,7 +220,6 @@ function DocumentPreviewCard({ thumbnailUrl, title }: DocumentPreviewCardProps) 
           )}
         </div>
 
-        {/* Top glare */}
         <div
           style={{
             position:      "absolute",
@@ -209,8 +230,6 @@ function DocumentPreviewCard({ thumbnailUrl, title }: DocumentPreviewCardProps) 
             zIndex:        10,
           }}
         />
-
-        {/* Corner fold */}
         <div
           style={{
             position:      "absolute",
@@ -236,7 +255,6 @@ function DocumentPreviewCard({ thumbnailUrl, title }: DocumentPreviewCardProps) 
         />
       </div>
 
-      {/* Ambient glow */}
       <div
         style={{
           position:      "absolute",
@@ -389,9 +407,7 @@ export default function ResumeSection({ resume }: ResumeSectionProps) {
 
               <div className="flex flex-wrap gap-3 pt-2">
                 <motion.button
-                  onClick={() =>
-                    triggerDownload(resume.fileUrl, fileName, setDownloading)
-                  }
+                  onClick={() => triggerDownload(resume.fileUrl, fileName, setDownloading)}
                   disabled={downloading}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-70 disabled:cursor-not-allowed"
                   style={{

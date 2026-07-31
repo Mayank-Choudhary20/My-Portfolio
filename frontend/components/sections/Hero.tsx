@@ -11,6 +11,7 @@ import {
   Code2,
   GraduationCap,
   LucideProps,
+  Loader2,
 } from "lucide-react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import HeroBackground from "@/components/Hero/Background";
@@ -24,38 +25,59 @@ type HeroProps = {
   settings:     Setting      | null;
 };
 
-// ── Lucide-specific icon type ─────────────────────────────────
 type LucideIcon = React.ForwardRefExoticComponent<
   Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
 >;
 
+// ── Google Drive URL → direct download URL ────────────────────
 function toDirectDownloadUrl(url: string): string {
   if (!url) return url;
-  const driveMatch = url.match(
-    /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/
-  );
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
   if (driveMatch) {
     return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
   }
-  const docsMatch = url.match(
-    /docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/
-  );
+  const docsMatch = url.match(/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/);
   if (docsMatch) {
     return `https://docs.google.com/document/d/${docsMatch[1]}/export?format=pdf`;
   }
   return url;
 }
 
-function downloadResume(rawUrl: string, filename: string) {
+// ── Mobile-safe download ──────────────────────────────────────
+// On mobile, <a download> is ignored for cross-origin URLs.
+// We fetch the file as a blob, create a local object URL,
+// then trigger download from that — works on both desktop and mobile.
+async function downloadResume(
+  rawUrl:   string,
+  filename: string,
+  setLoading: (v: boolean) => void,
+): Promise<void> {
+  setLoading(true);
   const url = toDirectDownloadUrl(rawUrl);
-  const a   = document.createElement("a");
-  a.href     = url;
-  a.download = filename;
-  a.target   = "_blank";
-  a.rel      = "noopener noreferrer";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+
+  try {
+    const res = await fetch(url, { mode: "cors" });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const blob    = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    const a       = document.createElement("a");
+    a.href        = blobUrl;
+    a.download    = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Revoke after a short delay so the browser finishes using it
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
+  } catch {
+    // Fallback: open in new tab if fetch fails (e.g. CORS blocked)
+    window.open(url, "_blank", "noopener,noreferrer");
+  } finally {
+    setLoading(false);
+  }
 }
 
 function parseTypingTexts(
@@ -113,8 +135,6 @@ function useTypingEffect(texts: string[], speed = 80, pause = 2200) {
   return displayed;
 }
 
-// ── Stat Card ─────────────────────────────────────────────────
-// FIXED: icon typed as LucideIcon instead of React.ElementType
 function StatCard({
   value,
   label,
@@ -126,9 +146,7 @@ function StatCard({
   icon:  LucideIcon;
   delay: number;
 }) {
-  // Extract to capitalized const
   const Icon = icon;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -144,8 +162,7 @@ function StatCard({
       <div
         className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
         style={{
-          background:
-            "linear-gradient(135deg,rgba(0,229,255,0.15),rgba(59,130,246,0.15))",
+          background: "linear-gradient(135deg,rgba(0,229,255,0.15),rgba(59,130,246,0.15))",
         }}
       >
         <Icon size={14} className="text-cyan-400" />
@@ -170,6 +187,7 @@ export default function Hero({
   settings,
 }: HeroProps) {
   const sectionRef = useRef<HTMLElement>(null);
+  const [downloading, setDownloading] = useState(false); // ← NEW
 
   const { scrollYProgress } = useScroll({
     target:  sectionRef,
@@ -222,6 +240,8 @@ export default function Hero({
   const projectsCount = projects.length;
   const certsCount    = certificates.length;
 
+  const resumeFilename = `${profile?.name?.replace(/\s+/g, "_") || "Resume"}.pdf`;
+
   return (
     <section
       ref={sectionRef}
@@ -236,18 +256,14 @@ export default function Hero({
       <HeroBackground />
 
       {/* Decorative blobs */}
-      <div
-        className="absolute inset-0 pointer-events-none overflow-hidden"
-        style={{ zIndex: 1 }}
-      >
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
         <div
           className="absolute rounded-full"
           style={{
             top: "-10%", left: "-10%",
             width: "55vw", height: "55vw",
             maxWidth: 700, maxHeight: 700,
-            background:
-              "radial-gradient(circle,rgba(29,78,216,0.08) 0%,transparent 70%)",
+            background: "radial-gradient(circle,rgba(29,78,216,0.08) 0%,transparent 70%)",
             filter: "blur(80px)",
           }}
         />
@@ -257,8 +273,7 @@ export default function Hero({
             top: "30%", right: "-10%",
             width: "45vw", height: "45vw",
             maxWidth: 600, maxHeight: 600,
-            background:
-              "radial-gradient(circle,rgba(124,58,237,0.06) 0%,transparent 70%)",
+            background: "radial-gradient(circle,rgba(124,58,237,0.06) 0%,transparent 70%)",
             filter: "blur(100px)",
           }}
         />
@@ -268,8 +283,7 @@ export default function Hero({
             bottom: "-5%", left: "30%",
             width: "35vw", height: "35vw",
             maxWidth: 450, maxHeight: 450,
-            background:
-              "radial-gradient(circle,rgba(0,229,255,0.04) 0%,transparent 70%)",
+            background: "radial-gradient(circle,rgba(0,229,255,0.04) 0%,transparent 70%)",
             filter: "blur(80px)",
           }}
         />
@@ -329,9 +343,7 @@ export default function Hero({
               >
                 <span
                   className="w-2 h-2 rounded-full flex-shrink-0 animate-pulse"
-                  style={{
-                    background: profile?.available !== false ? "#34d399" : "#f87171",
-                  }}
+                  style={{ background: profile?.available !== false ? "#34d399" : "#f87171" }}
                 />
                 <span
                   style={{
@@ -373,9 +385,7 @@ export default function Hero({
                 letterSpacing: "-0.02em",
               }}
             >
-              <span style={{ color: "#f1f5f9", display: "block" }}>
-                {firstName}
-              </span>
+              <span style={{ color: "#f1f5f9", display: "block" }}>{firstName}</span>
               <span
                 style={{
                   display:              "block",
@@ -392,12 +402,7 @@ export default function Hero({
             {/* Typing role */}
             <motion.div
               variants={item}
-              style={{
-                display:      "flex",
-                alignItems:   "center",
-                gap:          "0.75rem",
-                marginBottom: "1.25rem",
-              }}
+              style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}
             >
               <div
                 className="flex items-center justify-center flex-shrink-0"
@@ -411,10 +416,7 @@ export default function Hero({
               >
                 <Terminal size={14} className="text-cyan-400" />
               </div>
-              <div
-                className="flex items-center"
-                style={{ fontFamily: "monospace" }}
-              >
+              <div className="flex items-center" style={{ fontFamily: "monospace" }}>
                 <span
                   style={{
                     fontSize:             "clamp(1rem,2vw,1.25rem)",
@@ -459,35 +461,29 @@ export default function Hero({
             {/* CTA buttons */}
             <motion.div
               variants={item}
-              style={{
-                display:      "flex",
-                flexWrap:     "wrap",
-                gap:          "0.75rem",
-                marginBottom: "1.75rem",
-              }}
+              style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: "1.75rem" }}
             >
               {resumeUrl && (
                 <motion.button
-                  onClick={() =>
-                    downloadResume(
-                      resumeUrl,
-                      `${profile?.name?.replace(/\s+/g, "_") || "Resume"}.pdf`
-                    )
-                  }
-                  className="flex items-center gap-2 font-semibold text-white rounded-xl"
+                  onClick={() => downloadResume(resumeUrl, resumeFilename, setDownloading)}
+                  disabled={downloading}
+                  className="flex items-center gap-2 font-semibold text-white rounded-xl disabled:opacity-70 disabled:cursor-not-allowed"
                   style={{
                     padding:    "0.7rem 1.5rem",
                     fontSize:   "0.875rem",
                     background: "linear-gradient(135deg,#3b82f6,#7c3aed)",
                     boxShadow:  "0 4px 18px rgba(59,130,246,0.3)",
                     border:     "none",
-                    cursor:     "pointer",
+                    cursor:     downloading ? "not-allowed" : "pointer",
                   }}
-                  whileHover={{ scale: 1.04, y: -2 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={!downloading ? { scale: 1.04, y: -2 } : {}}
+                  whileTap={!downloading ? { scale: 0.97 } : {}}
                 >
-                  <Download size={15} />
-                  Download Resume
+                  {downloading
+                    ? <Loader2 size={15} className="animate-spin" />
+                    : <Download size={15} />
+                  }
+                  {downloading ? "Downloading…" : "Download Resume"}
                 </motion.button>
               )}
               <motion.a
@@ -512,12 +508,7 @@ export default function Hero({
             {/* Socials */}
             <motion.div
               variants={item}
-              style={{
-                display:      "flex",
-                alignItems:   "center",
-                gap:          "0.75rem",
-                marginBottom: "2rem",
-              }}
+              style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "2rem" }}
             >
               <span
                 style={{
@@ -530,13 +521,7 @@ export default function Hero({
               >
                 Follow
               </span>
-              <div
-                style={{
-                  height:     1,
-                  width:      24,
-                  background: "rgba(255,255,255,0.08)",
-                }}
-              />
+              <div style={{ height: 1, width: 24, background: "rgba(255,255,255,0.08)" }} />
               {[
                 { icon: FaGithub,   href: githubUrl,   label: "GitHub"   },
                 { icon: FaLinkedin, href: linkedinUrl, label: "LinkedIn" },
@@ -593,24 +578,9 @@ export default function Hero({
               variants={item}
               style={{ display: "flex", flexWrap: "wrap", gap: "0.6rem" }}
             >
-              <StatCard
-                value={`${yearsExp}+`}
-                label="Years Exp."
-                icon={Code2}
-                delay={2.7}
-              />
-              <StatCard
-                value={formatCount(projectsCount)}
-                label="Projects"
-                icon={Brain}
-                delay={2.8}
-              />
-              <StatCard
-                value={formatCount(certsCount)}
-                label="Certificates"
-                icon={GraduationCap}
-                delay={2.9}
-              />
+              <StatCard value={`${yearsExp}+`}          label="Years Exp."   icon={Code2}        delay={2.7} />
+              <StatCard value={formatCount(projectsCount)} label="Projects"  icon={Brain}        delay={2.8} />
+              <StatCard value={formatCount(certsCount)}  label="Certificates" icon={GraduationCap} delay={2.9} />
             </motion.div>
           </motion.div>
         </div>

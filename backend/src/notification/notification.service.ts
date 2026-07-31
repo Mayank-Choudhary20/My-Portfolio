@@ -5,8 +5,9 @@ export interface NotificationPayload {
   title:     string;
   message:   string;
   priority?: 1 | 2 | 3 | 4 | 5;
-  tags?:     string[];   // ntfy shortcode tags — NO emoji, only shortcodes like "bell", "envelope"
+  tags?:     string[];
   clickUrl?: string;
+  sound?:    string;   // ← NEW — ntfy sound name
 }
 
 @Injectable()
@@ -31,14 +32,6 @@ export class NotificationService {
       const controller = new AbortController();
       const timer      = setTimeout(() => controller.abort(), 8000);
 
-      // ── CRITICAL FIX ──────────────────────────────────────────────────────
-      // Headers must ONLY contain ASCII characters (0–255).
-      // Emoji in headers causes: "Cannot convert argument to a ByteString"
-      // Solution:
-      //   - Title header  → plain ASCII text only
-      //   - Tags header   → ntfy shortcode names only (bell, envelope, etc.)
-      //   - Emoji         → goes in the message BODY only (perfectly fine)
-      // ─────────────────────────────────────────────────────────────────────
       const safeTitle = this.toAscii(payload.title);
       const safeTags  = (payload.tags ?? ['bell']).join(',');
 
@@ -49,16 +42,23 @@ export class NotificationService {
         'Tags':         safeTags,
       };
 
-      // Click action — opens URL when notification is tapped
+      // ── Click action ──────────────────────────────────────────────────────
       if (payload.clickUrl) {
         headers['Click'] = payload.clickUrl;
+      }
+
+      // ── Custom sound ──────────────────────────────────────────────────────
+      // ntfy plays this sound instead of the default system sound.
+      // Only works in the ntfy Android/iOS app.
+      // Full list: https://docs.ntfy.sh/publish/#sound
+      if (payload.sound) {
+        headers['X-Ntfy-Sound'] = payload.sound;
       }
 
       const res = await fetch(this.ntfyUrl, {
         method:  'POST',
         signal:  controller.signal,
         headers,
-        // Body is sent as plain text — emoji in body is perfectly fine
         body:    payload.message,
       });
 
@@ -78,14 +78,10 @@ export class NotificationService {
     }
   }
 
-  // ── Strip emoji and non-ASCII characters from header strings ─────────────
-  // Headers must only contain bytes 0–255 (Latin-1 range).
-  // This removes anything above that range cleanly.
+  // ── Strip non-ASCII from header strings ───────────────────────────────────
   private toAscii(input: string): string {
     return input
-      // Remove emoji and characters above U+00FF
       .replace(/[^\x00-\xFF]/g, '')
-      // Collapse multiple spaces left by removed characters
       .replace(/\s{2,}/g, ' ')
       .trim();
   }
@@ -123,7 +119,6 @@ export class NotificationService {
         ? `${contact.browser} on ${contact.device}`
         : contact.browser ?? contact.device ?? null;
 
-    // Emoji in the BODY is completely fine — only headers are restricted
     const lines: string[] = [
       `From:    ${contact.name}`,
       `Email:   ${contact.email}`,
@@ -139,13 +134,19 @@ export class NotificationService {
     if (device)   lines.push(`Device: ${device}`);
 
     await this.send({
-      // Plain ASCII title — no emoji
       title:    'New Portfolio Contact',
       message:  lines.join('\n'),
       priority: 4,
-      // ntfy shortcode tag names — these render as emoji in the app
-      // but are sent as plain ASCII text in the header
       tags:     ['envelope', 'bell'],
+      // ── Custom sound for new contact messages ─────────────────────────────
+      // Change this to any sound name from the list above.
+      // Recommended options for an important alert:
+      //   'ding'        → classic doorbell
+      //   'achievement' → satisfying success tone
+      //   'magic'       → distinctive and pleasant
+      //   'radar'       → urgent attention-grabbing
+      //   'ping'        → clean short ping
+      sound:    'magic',
       clickUrl: this.adminUrl ? `${this.adminUrl}/contacts` : undefined,
     });
   }
@@ -165,6 +166,7 @@ export class NotificationService {
       message:  `Someone downloaded your resume.\nLocation: ${location}\nTime: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
       priority: 3,
       tags:     ['page_facing_up'],
+      sound:    'ping',
       clickUrl: this.adminUrl ? `${this.adminUrl}/dashboard` : undefined,
     });
   }
@@ -176,6 +178,7 @@ export class NotificationService {
       message:  `Your portfolio has now been visited by ${count} unique visitors.`,
       priority: 3,
       tags:     ['tada', 'chart_with_upwards_trend'],
+      sound:    'achievement',
       clickUrl: this.adminUrl ? `${this.adminUrl}/visitors` : undefined,
     });
   }
@@ -187,6 +190,7 @@ export class NotificationService {
       message:  `Context: ${context}\n\nError: ${error}\n\nTime: ${new Date().toISOString()}`,
       priority: 5,
       tags:     ['rotating_light', 'warning'],
+      sound:    'alert',
       clickUrl: this.adminUrl ? `${this.adminUrl}/dashboard` : undefined,
     });
   }
@@ -202,6 +206,7 @@ export class NotificationService {
       message,
       priority: options?.priority ?? 3,
       tags:     options?.tags     ?? ['bell'],
+      sound:    options?.sound    ?? 'default',
       clickUrl: options?.clickUrl ?? (this.adminUrl ? `${this.adminUrl}/dashboard` : undefined),
     });
   }
