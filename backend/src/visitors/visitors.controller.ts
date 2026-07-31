@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Req,
+  Body,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -12,23 +13,24 @@ import { VisitorsService } from './visitors.service';
 import { CreateVisitorDto } from './dto/create-visitor.dto';
 import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
 
+// ── UA parsers (still used as fallback) ───────────────────────
 function parseBrowser(ua: string): string {
-  if (/brave/i.test(ua))      return 'Brave';
-  if (/edg/i.test(ua))        return 'Edge';
-  if (/opr|opera/i.test(ua))  return 'Opera';
-  if (/firefox/i.test(ua))    return 'Firefox';
-  if (/chrome/i.test(ua))     return 'Chrome';
-  if (/safari/i.test(ua))     return 'Safari';
+  if (/brave/i.test(ua))     return 'Brave';
+  if (/edg/i.test(ua))       return 'Edge';
+  if (/opr|opera/i.test(ua)) return 'Opera';
+  if (/firefox/i.test(ua))   return 'Firefox';
+  if (/chrome/i.test(ua))    return 'Chrome';
+  if (/safari/i.test(ua))    return 'Safari';
   return 'Other';
 }
 
 function parseOS(ua: string): string {
-  if (/android/i.test(ua))          return 'Android';
-  if (/iphone|ipad|ipod/i.test(ua)) return 'iOS';
-  if (/windows/i.test(ua))          return 'Windows';
-  if (/macintosh|mac os/i.test(ua)) return 'macOS';
-  if (/ubuntu/i.test(ua))           return 'Ubuntu';
-  if (/linux/i.test(ua))            return 'Linux';
+  if (/android/i.test(ua))           return 'Android';
+  if (/iphone|ipad|ipod/i.test(ua))  return 'iOS';
+  if (/windows/i.test(ua))           return 'Windows';
+  if (/macintosh|mac os/i.test(ua))  return 'macOS';
+  if (/ubuntu/i.test(ua))            return 'Ubuntu';
+  if (/linux/i.test(ua))             return 'Linux';
   return 'Other';
 }
 
@@ -53,23 +55,34 @@ function extractIp(req: Request): string {
 export class VisitorsController {
   constructor(private readonly visitorsService: VisitorsService) {}
 
-  // ── POST /visitor — public, called by portfolio on page load ─
+  // ── POST /visitor ─────────────────────────────────────────────
+  // Called by the Next.js /api/track route which forwards:
+  //   { country, city, ip, userAgent }
+  // All geo data comes from the body — NOT from headers —
+  // because Vercel geo headers are not forwarded to Render.
   @Post()
   @HttpCode(HttpStatus.OK)
-  async track(@Req() req: Request): Promise<{ ok: boolean }> {
-    const ua      = req.headers['user-agent'] ?? '';
-    const ip      = extractIp(req);
-    const country = (req.headers['x-vercel-ip-country'] as string)
-      ?? (req.headers['cf-ipcountry'] as string)
-      ?? null;
-    const city    = (req.headers['x-vercel-ip-city'] as string)
-      ?? (req.headers['cf-ipcity'] as string)
-      ?? null;
+  async track(
+    @Req() req: Request,
+    @Body() body: CreateVisitorDto,
+  ): Promise<{ ok: boolean }> {
+
+    // Use UA from body (sent by Next.js route) or fallback to header
+    const ua = body.userAgent ?? req.headers['user-agent'] ?? '';
+
+    // Use IP from body (more accurate, extracted at Vercel edge)
+    // or fallback to socket IP
+    const ip = body.ip || extractIp(req) || undefined;
+
+    // country and city come from body — set by the Next.js route
+    // which has access to Vercel's x-vercel-ip-* headers
+    const country = body.country || undefined;
+    const city    = body.city    || undefined;
 
     const dto: CreateVisitorDto = {
-      ip:      ip      || undefined,
-      country: country || undefined,
-      city:    city    || undefined,
+      ip,
+      country,
+      city,
       browser: parseBrowser(ua),
       os:      parseOS(ua),
       device:  parseDevice(ua),
@@ -79,15 +92,14 @@ export class VisitorsController {
     return { ok: true };
   }
 
-  // ── GET /visitor — admin only, returns raw visitor data ──────
+  // ── GET /visitor — admin only ─────────────────────────────────
   @Get()
   @UseGuards(JwtAuthGuard)
   getAll() {
     return this.visitorsService.getAll();
   }
 
-  // ── GET /visitor/stats — PUBLIC, displayed on portfolio footer
-  // No JwtAuthGuard — aggregated stats only, no PII exposed
+  // ── GET /visitor/stats — public ───────────────────────────────
   @Get('stats')
   getStats() {
     return this.visitorsService.getStats();
