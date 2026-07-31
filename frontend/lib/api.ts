@@ -54,10 +54,14 @@ export async function getVisitorStats(): Promise<
 }
 
 // ── Fire-and-forget visitor tracking (client-side only) ──────
+// ── Fire-and-forget visitor tracking (client-side only) ──────
 export async function trackVisitor(): Promise<void> {
   try {
-    await fetch(`${BASE_URL}/visitor`, {
-      method:  "POST",
+    // These headers are available inside Vercel Edge/Serverless
+    // but we are client-side, so we call a Next.js API route
+    // that has access to them. See: frontend/app/api/track/route.ts
+    await fetch(`/api/track`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
     });
   } catch {
